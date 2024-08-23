@@ -128,5 +128,5 @@ Phyfum relies on the Array Sample sheet for the __complete__ workflow and a cust
 
 ## License
 
-`phyfum` is distributed under the terms of the [MIT](https://spdx.org/licenses/MIT.html) license.
+`phyfum` is distributed under the terms of the [CC-BY-NC-SA](https://spdx.org/licenses/MIT.html) license.
 

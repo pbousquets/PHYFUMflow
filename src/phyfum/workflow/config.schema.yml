@@ -120,9 +120,10 @@ properties:
     type: ["integer", "null"]
     description: Sampling period for the power-posterior MCMC samplers. Defaults to --iterations / 1000
     default: 1000
-  singularity:
-    type: boolean
-    description: Run Phyfum on singularity
+  nchains:
+    type: integer
+    description: Number of independent runs in BEAST
+    default: 3
   workdir:
     type: string
     description: Path to the output directory

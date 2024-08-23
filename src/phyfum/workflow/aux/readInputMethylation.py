@@ -83,7 +83,7 @@ class readMethylation:
         if not self.fixed_luca:
             self.tree_settings["cenancestorHeight"]["lower"] = str(self.age_dols - self.age_diagnosis)
             self.tree_settings["cenancestorHeight"]["upper"] = str(self.age_dols)
-            self.tree_settings["luca_height_prior"] = {
-                "lower": str(self.age_dols - self.age_diagnosis),
-                "upper": str(self.age_dols)
-                }
+        self.tree_settings["luca_height_prior"] = { # TODO: when solved bug #6, nest this within the previous ifelse statement
+            "lower": str(self.age_dols - self.age_diagnosis),
+            "upper": str(self.age_dols)
+            }

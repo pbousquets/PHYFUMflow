@@ -1,0 +1,22 @@
+{
+ "N": 2000,
+ "S": 4,
+ "lam": 1.0,
+ "mu": 0.03277,
+ "gamma": 0.0201,
+ "delta": 0.04,
+ "eta": 0.92,
+ "kappa": 100.0,
+ "random_tree": true,
+ "tree_file": null,
+ "seed": 292168826,
+ "samples": 5,
+ "eff_pop_size": 10000.0,
+ "time": 45,
+ "root_limits": "5,25",
+ "directory": ".",
+ "output": "4_1.0_0.03277_0.0201_100.0_5",
+ "no_tree": false,
+ "tree_time": 21.32605744561091,
+ "root_height": 23.67394255438909
+}

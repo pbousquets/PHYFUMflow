@@ -6,6 +6,7 @@ import os.path
 from aux.checkConfig import readDefaults, makeConfig
 from aux.checkPatients import checkPatientsBetas, checkPatientInfo
 from aux.checkInput import checkInput
+import random
 
 min_version("6.10.0")
 
@@ -15,16 +16,16 @@ validate(config, "config.schema.yml")
 
 workdir: config.get("workdir", ".")
 
-if config.get("singularity"):
-    ruleorder: beast > beast_nosingularity 
-else: 
-    ruleorder: beast_nosingularity > beast
-
 XMLgenerator = workflow.source_path("aux/methylationBetas2xml.py")
 _ = workflow.source_path("aux/createXML.py"), workflow.source_path("aux/readInputMethylation.py")
 readIDAT = workflow.source_path("aux/readIDAT.R")
 methCNV = workflow.source_path("aux/methCNV.R")
 selectCpGs = workflow.source_path("aux/select_cpgs.py")
+plot_tree = workflow.source_path("aux/plot_tree.R")
+plot_post = workflow.source_path("aux/plot_posterior_predictive.py")
+convergence = workflow.source_path("aux/mixingAndConvergence.R")
+gather_MLE = workflow.source_path("aux/gatherMLE.sh")
+model_selection = workflow.source_path("aux/modelSelectionS.R")
 manifest = workflow.source_path("data/MethylationEPIC_v-1-0_B4.csv")
 crossreactivefile = workflow.source_path("data/13059_2016_1066_MOESM1_ESM.csv")
 
@@ -38,9 +39,16 @@ df = pd.read_csv(config.get("patientInfo"))
 df = checkPatientInfo(df, patient_col)
 PATIENTS = df[patient_col].unique()
 SAMPLES = df.groupby(patient_col)[sample_col].agg(list)
+AGES = df.groupby(patient_col)[age_col].max().to_dict()
 
 stemCellsSweep=config.get("stemCells").split("-")
 STEMCELLS=list(range(int(stemCellsSweep[0]), int(stemCellsSweep[1]), int(stemCellsSweep[2])))
+CHAIN_LENGTH = config.get("iterations", 750_000)
+
+NCHAINS = config.get("nchains", 3)
+SEED = config.get("seed", random.randint(0, 100000))
+random.seed(SEED)
+seeds = [random.randint(0, 100000) for _ in range(NCHAINS)] if NCHAINS > 1 else SEED
 
 mode = checkInput(config)
 activateCNV = False
@@ -54,15 +62,14 @@ elif mode == "complete":
 else:
     raise RuntimeError(f"Unexpected inferred mode {mode}")
 
-
 if config.get("fcpgs"):
     ruleorder: force_cpgs > select_cpgs
 else:
     ruleorder: select_cpgs > force_cpgs
 
 rule all:
-    input: expand("results/{patient}/{patient}.{stemcell}cells.{ext}", patient=PATIENTS, stemcell=STEMCELLS, ext = ["ops", "trees", "log"]) 
-
+    input: expand("results/{patient}/selected_model/{patient}.{ext}", patient=PATIENTS, ext = ["log", "consensus.tree", "tree.pdf", "posterior.pdf"])
+    
 rule readIDAT:
     input:
         dir = config.get("input"),
@@ -135,7 +142,6 @@ checkpoint split_flucpgs:
     run:
         df = pd.read_csv(input[0])
         df.set_index(df.columns[0], inplace=True)
-        
         makedirs(output[0], exist_ok = True)
         for patient in PATIENTS:
             samples = SAMPLES[patient]
@@ -182,7 +188,7 @@ def aggregate_input(wildcards):
 
 rule getXML:
     input: 
-        minibetas = aggregate_input,
+        minibetas=lambda wildcards: aggregate_input(wildcards),
         blacklist = rules.merge_blacklists.output,
         patientInfo = config.get("patientInfo"),
     output: 
@@ -195,7 +201,7 @@ rule getXML:
         mu = config.get("mu", .1),
         gamma = config.get("gamma", .1),
         lam = config.get("lam", 1),
-        iterations = config.get("iterations", 750_000),
+        iterations = CHAIN_LENGTH,
         precision = config.get("precision", 6),
         sampling = config.get("sampling", 75),
         screenSampling = config.get("screenSampling", 500),
@@ -223,46 +229,105 @@ rule getXML:
         name=$(basename {output.xml})
         name=${{name%.xml}}
 
-        python3 {XMLgenerator} --samplesheet {input.patientInfo} --input $tmp --output $name --luca-mode {params.luca_mode} --age-col {params.age_col} --sample-col {params.sample_col} --sample-type-col {params.sample_type_col} --stemCells {wildcards.stemcell} --delta {params.delta} --eta {params.eta} --kappa {params.kappa} --mu {params.mu} --gamma {params.gamma} --lambda {params.lam} --iterations {params.iterations} --precision {params.precision} --sampling {params.sampling} --screenSampling {params.screenSampling} {params.stripRownames} {params.mle_ps} {params.mle_ss} {params.hme} --mle-steps {params.mle_steps} --mle-iterations {params.mle_iterations} --mle-sampling {params.mle_sampling} 
+        python3 {params.XMLgenerator} --samplesheet {input.patientInfo} --input $tmp --output $name --luca-mode {params.luca_mode} --age-col {params.age_col} --sample-col {params.sample_col} --sample-type-col {params.sample_type_col} --stemCells {wildcards.stemcell} --delta {params.delta} --eta {params.eta} --kappa {params.kappa} --mu {params.mu} --gamma {params.gamma} --lambda {params.lam} --iterations {params.iterations} --precision {params.precision} --sampling {params.sampling} --screenSampling {params.screenSampling} {params.stripRownames} {params.mle_ps} {params.mle_ss} {params.hme} --mle-steps {params.mle_steps} --mle-iterations {params.mle_iterations} --mle-sampling {params.mle_sampling} 
         """
-
-        
 
 rule beast:
     input:
         "results/XMLs/{patient}.{stemcell}cells.xml"
     output:
-        multiext("results/{patient}/{patient}.{stemcell}cells", ".trees", ".log", ".ops")
+        files = multiext("results/{patient}/seed{seed}/{patient}.{stemcell}cells", ".trees", ".log", ".ops", ".MLE.log")
     log: 
-        "beast_logs/{patient}/{stemcell}cells/{patient}.run.log"
+        "beast_logs/{patient}/{stemcell}cells/{patient}.{seed}.run.log"
     params: 
-        seed = f"-seed {config.get('seed')}" if config.get("seed") >= 0 else ""
+        directory = "results/{patient}/seed{seed}",
+        seed = "{seed}"
     shell:
         """
-        out="results/{wildcards.patient}" && mkdir -p $out 
-        singularity run -B $(pwd):/mnt docker://rachelicr/pisca-branch-master {params.seed} {input} > {log} 2> {log}
-        for outfile in {output}
-        do
-            mv $(basename $outfile) $out
-        done
+        log=$(realpath {log})
+        input=$(realpath {input})
+        cd {params.directory}
+        beast -beagle_off -seed {params.seed} $input > $log 2> $log
         """
 
-rule beast_nosingularity:
+
+rule qc:
     input:
-        "results/XMLs/{patient}.{stemcell}cells.xml"
+        trees = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.trees", seed = seeds),
+        logs = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.log", seed = seeds) if NCHAINS == 1 else expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.MLE.log", seed = seeds),
     output:
-        multiext("results/{patient}/{patient}.{stemcell}cells", ".trees", ".log", ".ops")
-    log: 
-        "beast_logs/{patient}/{stemcell}cells/{patient}.run.log"
-    params: 
-        seed = f"-seed {config.get('seed')}" if config.get("seed") >= 0 else ""
+        outdir = directory("results/{patient}/convergence/{patient}.{stemcell}cells/"),
+        mle = "results/{patient}/convergence/{patient}.{stemcell}cells/{patient}.{stemcell}cells.MLE.csv" #Generated first with the first script and then we modify it with the second one
+    params:
+        burnin = config.get("burnin", 0.1),
+        gather_MLE = gather_MLE,
+        convergence = convergence        
     shell:
         """
-        out="results/{wildcards.patient}" && mkdir -p $out 
-        beast -beagle_off {params.seed} {input} > {log} 2> {log}
+        Rscript {params.convergence} {params.burnin} {threads} {output.outdir} {input.trees} 2> /dev/null
+        bash {params.gather_MLE} {input.logs} {output.mle}
+        """
 
-        for outfile in {output}
-        do
-            mv $(basename $outfile) $out
-        done
+rule model_selection:
+    input:
+        expand("results/{{patient}}/convergence/{{patient}}.{stemcell}cells/{{patient}}.{stemcell}cells.MLE.csv", stemcell = STEMCELLS)
+    output:
+        folder = directory("results/{patient}/selected_model"),
+        best = "results/{patient}/selected_model/{patient}.bestFitS.csv"
+    params:
+        model_selection = model_selection
+    shell:
+        "Rscript {params.model_selection} {output.folder} {input}"
+
+       
+rule logcombiner:
+    input:
+        best = rules.model_selection.output.best,
+    output:
+        combined_logs = "results/{patient}/selected_model/{patient}.log",
+        combined_trees = "results/{patient}/selected_model/{patient}.trees"
+    params: 
+        burnin = int(config.get("burnin", 0.1)*CHAIN_LENGTH)
+    shell:
+        """
+        opt_cells=$(awk -F, 'NR==2 {{print $3}}' {input.best}) 
+        logs=$(ls results/{wildcards.patient}/seed*/{wildcards.patient}.${{opt_cells}}cells.log)
+        trees=$(ls results/{wildcards.patient}/seed*/{wildcards.patient}.${{opt_cells}}cells.trees)
+        logcombiner -burnin {params.burnin} $logs {output.combined_logs}
+        logcombiner -burnin {params.burnin} -trees $trees {output.combined_trees}
+        """
+
+rule plot_tree:
+    input:
+        trees = rules.logcombiner.output.combined_trees,
+        log = rules.logcombiner.output.combined_logs,
+    output:
+        consensus = "results/{patient}/selected_model/{patient}.consensus.tree",
+        plot = "results/{patient}/selected_model/{patient}.tree.pdf"
+    params:
+        plot_tree = plot_tree,
+        age = lambda wildcards: AGES[wildcards.patient],
+        burnin = int(config.get("burnin", 0.1))
+    shell:
+        """
+        treeannotator {input.trees} {output.consensus}
+        Rscript {params.plot_tree} {output.consensus} '{wildcards.patient}' {output.plot} {params.burnin} {params.age} {input.log}
+        """
+
+rule plot_posterior:
+    input:
+        minibetas = lambda wildcards: aggregate_input(wildcards),
+        log = rules.logcombiner.output.combined_logs,
+        patientInfo = config.get("patientInfo"),
+        best = rules.model_selection.output.best
+    params:
+        age_col = age_col,
+        sample_col = sample_col,
+        plot_post = plot_post
+    output: 
+        "results/{patient}/selected_model/{patient}.posterior.pdf"
+    shell:
+        """
+        opt_cells=$(awk -F, 'NR==2 {{print $3}}' {input.best}) 
+        python3 {params.plot_post} --betas {input.minibetas} --log {input.log} --samplesheet {input.patientInfo} --age_col {params.age_col} --sample_col {params.sample_col} --cells $opt_cells --output {output}
         """

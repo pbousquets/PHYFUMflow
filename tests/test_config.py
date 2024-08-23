@@ -13,6 +13,6 @@ def test_defaults(defaults: Path):
 
 def test_config_cleanup(defaults: Path, example_config: Path):
     DEFAULTS = checkConfig.readDefaults(defaults)
-    config = snakemake.load_configfile(example_config)
+    config = snakemake.common.configfile.load_configfile(example_config)
     finalConfig = checkConfig.makeConfig(config, DEFAULTS)
     assert len(finalConfig) > 3 and finalConfig.get("mle_iterations") == 7500
