@@ -254,7 +254,10 @@ rule beast:
 rule qc:
     input:
         trees = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.trees", seed = seeds),
-        logs = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.log", seed = seeds) if NCHAINS == 1 else expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.MLE.log", seed = seeds),
+		#DM
+        #logs = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.log", seed = seeds) if NCHAINS == 1 else expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.MLE.log", seed = seeds),
+		#This did not look right to me. With NCHAINS == 1 the log that should be used is the stdout log (\*.run.log) instead of the trace of the MCMC parameters (\*.cells.log). I suggest changing the names of the variables that store logs to make this clear (log/logs refers to two different things: the .log trace files that BEAST generates and our capture of stdout). I did not do this myself since I do not want to change your coding style
+        logs = expand("beast_logs/{patient}/{stemcell}cells/{patient}.{seed}.run.log", seed = seeds) if NCHAINS == 1 else expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.MLE.log", seed = seeds),
     output:
         outdir = directory("results/{patient}/convergence/{patient}.{stemcell}cells/"),
         mle = "results/{patient}/convergence/{patient}.{stemcell}cells/{patient}.{stemcell}cells.MLE.csv" #Generated first with the first script and then we modify it with the second one
@@ -307,11 +310,15 @@ rule plot_tree:
     params:
         plot_tree = plot_tree,
         age = lambda wildcards: AGES[wildcards.patient],
-        burnin = int(config.get("burnin", 0.1))
+		#DM
+		#burnin should be 0 here, since we are using the combined trees and logs as input, which have already been "cleaned" at the logcombiner step. This burnin option exists in the R script because when NCHAINS==1 the logcombiner step could be skipped and the burning could be done at this step. This seems to be more complicated to implement for this pipeline. I am suggesting to just remove the burnin argument from the plot_tree rule params and fixing it to 0 in the shell call below
+        #burnin = int(config.get("burnin", 0.1))
     shell:
         """
         treeannotator {input.trees} {output.consensus}
-        Rscript {params.plot_tree} {output.consensus} '{wildcards.patient}' {output.plot} {params.burnin} {params.age} {input.log}
+		#DM
+        #Rscript {params.plot_tree} {output.consensus} '{wildcards.patient}' {output.plot} {params.burnin} {params.age} {input.log}
+        Rscript {params.plot_tree} {output.consensus} '{wildcards.patient}' {output.plot} 0 {params.age} {input.log}
         """
 
 rule plot_posterior:
