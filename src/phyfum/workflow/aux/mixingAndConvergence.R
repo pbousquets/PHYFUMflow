@@ -318,7 +318,7 @@ print(paste0("Saving outputs in ",outDir)) #ForPablo: remove?
 
 #Parsing input traces
 #######################################
-sink('/dev/null') #shut up!
+sink(nullfile()) #shut up!
 chains=invisible(lapply(files,FUN=function(x){
   logfile <- gsub(x,pattern = ".trees",replacement = ".log")
   if(!file.exists(logfile)) stop(sprintf("ERROR: logfile %s for tree file %s not found",logfile,x)) ##TODO this will not be visible because I am trying to mute the rest of the code in this section
