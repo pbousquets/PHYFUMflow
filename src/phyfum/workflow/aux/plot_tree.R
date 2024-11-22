@@ -32,9 +32,12 @@ logDataFile=args[6]
 logData=fread(logDataFile)
 lucaBranch=mean(logData[,luca_branch][floor(nrow(logData)*burnin):nrow(logData)])
 hpdLucaBranch=hdi(logData[,luca_branch][floor(nrow(logData)*burnin):nrow(logData)],credMass = credMass)
+rm(logData) #saving memory
 
-rm(logData)
+#Make output directory if needed
+dir.create(dirname(outputfile),recursive = T,showWarnings = F)
 
+#Stdout info
 print(paste("mccfile",mccTreeFile))
 print(paste("title",title))
 print(paste("outputfile",outputfile))
@@ -43,13 +46,9 @@ print(paste("age",age))
 print(paste("lucaBranch",lucaBranch))
 print(paste("hpdLucaBranch",hpdLucaBranch))
 
-
-#rm(logData)
-
 ##Parsing the tree
 mccTree=read.beast(mccTreeFile)
 mccTreeDataFrame=fortify(mccTree)
-
 
 #Adding luca with proper time
 root=which(mccTreeDataFrame$parent==mccTreeDataFrame$node)
