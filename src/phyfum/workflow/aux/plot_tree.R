@@ -88,7 +88,7 @@ mccTreeDataFrame[root,"posterior"]=NA
 minX=min(mccTreeDataFrame[,"x"])
 maxX=max(mccTreeDataFrame[,"x"])
 extraX=0.2*(maxX-minX)
-padMinX=2
+padMinX=0.05*(maxX-minX)
 
 minXError=min(as.vector(sapply(mccTreeDataFrame$height_0.95_HPD,function(x){return(c(x[1],x[2]))},simplify = TRUE)),na.rm = T)
 
