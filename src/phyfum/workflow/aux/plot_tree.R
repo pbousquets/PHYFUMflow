@@ -1,5 +1,4 @@
-#!/opt/R/4.3.2/bin Rscript
-
+#!/usr/bin/env Rscript
 
 # Call this as follows:
 
@@ -15,6 +14,7 @@ pdf(NULL)
 #Configuration
 burnin=0.1
 ppThreshold=0.8
+credMass=0.95
 
 folder = getwd()
 args=commandArgs(trailingOnly = T)
@@ -31,7 +31,7 @@ age=as.numeric(args[5])
 logDataFile=args[6]
 logData=fread(logDataFile)
 lucaBranch=mean(logData[,luca_branch][floor(nrow(logData)*burnin):nrow(logData)])
-hpdLucaBranch=hdi(logData[,luca_branch][floor(nrow(logData)*burnin):nrow(logData)],credMass = 0.95)
+hpdLucaBranch=hdi(logData[,luca_branch][floor(nrow(logData)*burnin):nrow(logData)],credMass = credMass)
 
 rm(logData)
 
