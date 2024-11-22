@@ -315,7 +315,7 @@ rule plot_tree:
         #burnin = int(config.get("burnin", 0.1))
     shell:
         """
-        treeannotator {input.trees} {output.consensus}
+        treeannotator -heights median {input.trees} {output.consensus}
 		#DM
         #Rscript {params.plot_tree} {output.consensus} '{wildcards.patient}' {output.plot} {params.burnin} {params.age} {input.log}
         Rscript {params.plot_tree} {output.consensus} '{wildcards.patient}' {output.plot} 0 {params.age} {input.log}
