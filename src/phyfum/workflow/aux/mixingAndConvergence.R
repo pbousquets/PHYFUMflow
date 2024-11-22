@@ -1,7 +1,7 @@
 if (!require("pacman")) install.packages("pacman")
 library(pacman)
 p_load_gh("adamallo/rwty")
-p_load(rstan, LaplacesDemon, ggplot2, cowplot, ggrepel, data.table)
+p_load(rstan, LaplacesDemon, ggplot2, cowplot, ggrepel, data.table, HDInterval)
 
 
 #My functions
@@ -45,10 +45,18 @@ detectConstants <- function(theseData,params){
 #' Generates a table with convergence statistics using Rstan
 #'
 #' @param stanTable MCMC data for one parameter, with as many columns as independent chains of same length
+#' @param credMass Mass for the high posterior density interval
 #' @return data.table with a row per parameter and colums for Rhat, ESSB and ESST
-stanStats <- function(stanTable) {
-  stanMatrix=as.matrix(stanTable)
-  data.table("Rhat"=Rhat(stanMatrix),"essB"=ess_bulk(stanMatrix),"essT"=ess_tail(stanMatrix),"medianP"=median(stanMatrix), "meanP"=mean(stanMatrix))
+stanStats <- function(stanTable,credMass = 0.95) {
+  stanMatrix <- as.matrix(stanTable)
+  thisHDI <- hdi(stanMatrix,credMass = credMass)
+  data.table("Rhat"=Rhat(stanMatrix),
+             "essB"=ess_bulk(stanMatrix),
+             "essT"=ess_tail(stanMatrix),
+             "medianP"=median(stanMatrix), 
+             "meanP"=mean(stanMatrix),
+             "HDILower"=thisHDI[1],
+             "HDIUpper"=thisHDI[2])
 }
 
 #' Generates a trace of tree distances from a focal tree selected at random to calculate a pseudo ESS with it (or plotting, etc.)
@@ -98,45 +106,24 @@ mergeTreeTrace=function(chains,burninP){
   return(returnChain)
 }
 
-#' Generates a table with summary statistics for all parameters
-#'
-#' @param theData MCMC data in data.table format after getDataTable
-#' @param params List of parameter names to analyze
-#' @param credMass Mass for the hight posterior density interval
-#' @return data.table with a row per parameter and colums for mean, median, hdilower and hdiupper
-getSummaryTableFromDataTable=function(theData,params,credMass=0.95){
-  returnTable=data.table(
-    t(theData[,lapply(.SD,function(x,credMass=0.95){
-      theHDI=hdi(x,credMass=credMass)
-      c("mean"=mean(x,na.rm=T),
-        "median"=median(x,na.rm=T),
-        "HDILower"=theHDI[1],
-        "HDIupper"=theHDI[2])},
-      credMass=0.95),.SDcols=params]
-    ),
-    keep.rownames = T
-  )
-  setnames(returnTable,c("param","mean","median","HDILower","HDIUpper"))
-  return(returnTable)
-}
-
 #' Generates a data.table with convergence statistics for all parameters
 #' 
 #' @param theData MCMC data in data.table format after getDataTable
 #' @param params List of parameter names to analyze
+#' @param credMass Mass for the high posterior density interval
 #' @param byChain Calculates Rhat, and the two ESS parameters both using all chains and by chain (otherwise, using all of them only)
 #' @return data.table with a row per parameter and colums for Rhat, ESSB and ESST
-getConvergenceTableFromDataTable=function(theData,params,byChain = T){
+getConvergenceTableFromDataTable=function(theData,params,credMass = 0.95,byChain = T){
   returnTable <- rbindlist(lapply(1:length(params),FUN=function(iparam){
           thisParam <- params[iparam]
-          stanStats(dcast(theData[,c("state",thisParam,"chain"),with=F],state~chain,value.var = thisParam)[,-1])[,`:=`(param = thisParam)]}))
+          stanStats(dcast(theData[,c("state",thisParam,"chain"),with=F],state~chain,value.var = thisParam)[,-1], credMass = credMass)[,`:=`(param = thisParam)]}))
   setkey(returnTable, param)
+  returnTable[,`:=`(chain = "ALL")]
   if(byChain == T){
-    returnTable[,`:=`(chain = "ALL")]
     returnTableByChain <- rbindlist(lapply(theData[,unique(chain)],FUN = function(thisChain){
       thisReturnTable <- rbindlist(lapply(1:length(params),FUN=function(iparam){
         thisParam <- params[iparam]
-        stanStats(dcast(theData[chain == thisChain,c("state",thisParam,"chain"),with=F],state~chain,value.var = thisParam)[,-1])[,`:=`(param = thisParam)]}))
+        stanStats(dcast(theData[chain == thisChain,c("state",thisParam,"chain"),with=F],state~chain,value.var = thisParam)[,-1], credMass = credMass)[,`:=`(param = thisParam)]}))
       thisReturnTable[,`:=`(chain = thisChain)]
       return(thisReturnTable)}))
     setkey(returnTableByChain,param)
@@ -152,22 +139,24 @@ getConvergenceTableFromDataTable=function(theData,params,byChain = T){
 #' @param burnin Number of MCMC samples to discard as burnin
 #' @param n Number of focal trees to calculate tree distances, for which convergence parameters are calculated. Then, the mean is reported
 #' @param treedist Tree distance to be used to calculate the distance to the focal tree
+#' @param credMass Mass for the high posterior density interval
 #' @param byChain Calculates Rhat, and the two ESS parameters both using all chains and by chain (otherwise, using all of them only)
 #' @return data.table with a row per parameter and colums for Rhat, ESSB and ESST
-treeConvergenceStats <- function(chains, burnin = 0, n = 20, treedist = "PD", byChain = T){
+treeConvergenceStats <- function(chains, burnin = 0, n = 20, treedist = "PD", credMass = 0.95, byChain = T){
+  sdCols <- c("Rhat","essB","essT","medianP","meanP","HDILower","HDIUpper")
   chains <- check.chains(chains)
   chain <- chains[[1]]
   indices <- seq(from = burnin + 1, to = length(chain$trees), 
                  by = 1)
   trees <- lapply(chains, function(x) x[["trees"]][indices])
-  replicatedStanStats <- rbindlist(lapply(1:n,FUN = function(x){stanStats(do.call(data.table,sapply(trees,treeDistanceTrace,treedist = treedist)))}))
-  returnTable <- replicatedStanStats[,lapply(.SD,mean),.SDcols=c("Rhat","essB","essT","medianP","meanP")]
+  replicatedStanStats <- rbindlist(lapply(1:n,FUN = function(x){stanStats(do.call(data.table,sapply(trees,treeDistanceTrace,treedist = treedist)),credMass = credMass)}))
+  returnTable <- replicatedStanStats[,lapply(.SD,mean),.SDcols = sdCols]
+  returnTable[,`:=`(chain = "ALL")]
   if(byChain == T) {
-    returnTable[,`:=`(chain = "ALL")]
     returnTableByChain <- rbindlist(lapply(1:length(trees),FUN = function(thisChain){
       theseTrees <- list(trees[[thisChain]])
-      theseChainstanStats <- rbindlist(lapply(1:n,FUN = function(x){stanStats(do.call(data.table,sapply(theseTrees,treeDistanceTrace,treedist = treedist)))}))
-      theseChainsummaryStanStats <- theseChainstanStats[,lapply(.SD,mean),.SDcols=c("Rhat","essB","essT","medianP","meanP")]
+      theseChainstanStats <- rbindlist(lapply(1:n,FUN = function(x){stanStats(do.call(data.table,sapply(theseTrees,treeDistanceTrace,treedist = treedist)),credMass = credMass)}))
+      theseChainsummaryStanStats <- theseChainstanStats[,lapply(.SD,mean),.SDcols = sdCols]
       theseChainsummaryStanStats[,`:=`(chain = thisChain)]}))
     returnTable <- cbind(returnTable,returnTableByChain[,.(medianPCV=sd(medianP)/mean(medianP),meanPCV=sd(meanP)/mean(meanP))])
     returnTable <- rbind(returnTable,returnTableByChain,fill=T)
@@ -235,6 +224,7 @@ writePlotContinuousParameters=function(theseData,parameterNames,outDir,outName,n
 minESS <- 200
 maxRhat <- 1.1
 #maxCV <- 0.01 #TODO what is a good maxCV?
+credMass <- 0.95
 
 #Output config
 problematicOutputSuffix <- "problematicParams.csv"
@@ -251,6 +241,8 @@ args <- commandArgs(trailingOnly = TRUE) #Comment for debugging, uncomment to ru
 
 #DEBUG
 #######################################
+#baseDir="~/projects/flipFlop/infantCrypts"
+#args=c(0,1,paste(sep="/",baseDir,"analyses/overS/AI_colon_2_overS"),paste(sep="/",baseDir,"runs/combined/overS/AI_colon_2_overS.trees"))
 
 #baseDir="~/projects/flipFlop/simulationStudy/simStudy"
 #args=c(0.1,8,paste(sep="/",baseDir,"analysis"),paste(sep="/",baseDir,"333/sim_3_0.1_0.001_0.001_100_9_3cells.trees"),paste(sep="/",baseDir,"666/sim_3_0.1_0.001_0.001_100_9_3cells.trees"),paste(sep="/",baseDir,"999/sim_3_0.1_0.001_0.001_100_9_3cells.trees"))
@@ -340,7 +332,7 @@ burninSamples=theseData[chain==1 & burnin==T,.N]
 #Assess tree convergence 
 #######################################
 #WARNING: We are doing this separate to be able to run 20 different pseudoESS estimations and report their mean instead of using just one
-topologyConvergence <- treeConvergenceStats(chains,burninSamples)
+topologyConvergence <- treeConvergenceStats(chains, burninSamples, credMass = credMass, byChain = ifelse(length(chains)>1,T,F))
 
 #Make one tree-distance trace from the tree with index 1 for tree-trace plots
 treeTopologyData <- treeDistanceTraces(chains,0)[,`:=`(burnin=ifelse(.I<.N*burninP,T,F))][]
@@ -353,7 +345,7 @@ paramsForConvergence <- names(theseData)
 paramsForConvergence <- paramsForConvergence[!paramsForConvergence%in%c("state","chain","burnin","treedistance")]#Never use this treedistance data for convergence, only for plotting
 constantParameters <- detectConstants(theseData,c(paramsForConvergence,"treedistance"))
 warning(sprintf("The parameters (%s) are constant and not taken into account for mixing and convergence evaluation",paste(collapse=",",constantParameters))) #ForPablo: This information should be relayed to the user
-continuousConvergence <- getConvergenceTableFromDataTable(theseData[burnin==F,],paramsForConvergence[!paramsForConvergence%in%constantParameters]) 
+continuousConvergence <- getConvergenceTableFromDataTable(theseData[burnin==F,], paramsForConvergence[!paramsForConvergence%in%constantParameters], credMass = credMass, byChain = ifelse(length(chains)>1,T,F))
 convergence <- rbind(continuousConvergence,topologyConvergence)
 setkey(convergence,param)
 #######################################
@@ -391,8 +383,9 @@ for (plotname in names(rwtyPlots[grep(".correlations",names(rwtyPlots),value = T
 #######################################
 
 #All convergence statistics
+outColumns=c("param","chain","Rhat","essB","essT","medianP","meanP","HDILower","HDIUpper")
 allOutputFileName=paste0(outDir,"/",paste(sep=".",baseName,allOutputSuffix))
-write.csv(convergence,file = allOutputFileName,quote = F,row.names = F)
+write.csv(convergence[,.SD,.SDcols = outColumns],file = allOutputFileName,quote = F,row.names = F)
 
 #Parameters that do not meet certain standards
 
