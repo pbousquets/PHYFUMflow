@@ -88,6 +88,20 @@ getDataTable=function(chains,burninP){
   return(returnTable)
 }
 
+#' Regenerates multiple MCMC chains from a data.table created by getDataTable
+#' 
+#' @param chains MCMC data. List of rwty.chains (RWTY's load.trees value)
+#' @param theData Data table with modified chain data
+#' @return new chains
+updateChainsFromDataTable=function(chains,theData){
+  chainCols <- names(theData)
+  chainCols <- chainCols[!chainCols %in% c("chain","burnin","treedistance")] 
+  for(ichain in 1:length(chains)){
+    chains[[ichain]]$ptable <- data.table(theData[chain==ichain,.SD,.SDcols = chainCols])
+  }
+  return(chains)
+}
+
 #' Merges a list of rwty.chains into one, after proper burnin
 #' 
 #' @param chains MCMC data. List of rwty.chains (RWTY's load.trees value)
@@ -241,8 +255,8 @@ args <- commandArgs(trailingOnly = TRUE) #Comment for debugging, uncomment to ru
 
 #DEBUG
 #######################################
-baseDir="~/projects/flipFlop/infantCrypts"
-args=c(0,1,paste(sep="/",baseDir,"analyses/overS/AI_colon_2_overS"),paste(sep="/",baseDir,"runs/combined/overS/AI_colon_2_overS.trees"))
+#baseDir="~/projects/flipFlop/infantCrypts"
+#args=c(0,1,paste(sep="/",baseDir,"analyses/overS/AI_colon_2_overS"),paste(sep="/",baseDir,"runs/combined/overS/AI_colon_2_overS.trees"))
 
 #baseDir="~/projects/flipFlop/simulationStudy/simStudy"
 #args=c(0.1,8,paste(sep="/",baseDir,"analysis"),paste(sep="/",baseDir,"333/sim_3_0.1_0.001_0.001_100_9_3cells.trees"),paste(sep="/",baseDir,"666/sim_3_0.1_0.001_0.001_100_9_3cells.trees"),paste(sep="/",baseDir,"999/sim_3_0.1_0.001_0.001_100_9_3cells.trees"))
@@ -332,6 +346,7 @@ burninSamples=theseData[chain==1 & burnin==T,.N]
 #Data augmentation
 #######################################
 theseData[,`:=`(flipflop.Rmu=flipflop.mu/flipflop.lambda,flipflop.Rgamma=flipflop.gamma/flipflop.lambda,flipflop.MDbias=flipflop.mu/flipflop.gamma)]
+chains <- updateChainsFromDataTable(chains = chains,theData = theseData)
 #######################################
 
 #Assess tree convergence 
