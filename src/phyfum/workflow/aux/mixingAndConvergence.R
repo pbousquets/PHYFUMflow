@@ -241,8 +241,8 @@ args <- commandArgs(trailingOnly = TRUE) #Comment for debugging, uncomment to ru
 
 #DEBUG
 #######################################
-#baseDir="~/projects/flipFlop/infantCrypts"
-#args=c(0,1,paste(sep="/",baseDir,"analyses/overS/AI_colon_2_overS"),paste(sep="/",baseDir,"runs/combined/overS/AI_colon_2_overS.trees"))
+baseDir="~/projects/flipFlop/infantCrypts"
+args=c(0,1,paste(sep="/",baseDir,"analyses/overS/AI_colon_2_overS"),paste(sep="/",baseDir,"runs/combined/overS/AI_colon_2_overS.trees"))
 
 #baseDir="~/projects/flipFlop/simulationStudy/simStudy"
 #args=c(0.1,8,paste(sep="/",baseDir,"analysis"),paste(sep="/",baseDir,"333/sim_3_0.1_0.001_0.001_100_9_3cells.trees"),paste(sep="/",baseDir,"666/sim_3_0.1_0.001_0.001_100_9_3cells.trees"),paste(sep="/",baseDir,"999/sim_3_0.1_0.001_0.001_100_9_3cells.trees"))
@@ -327,6 +327,11 @@ if(length(nSamples) != 1){
 theseData=getDataTable(chains,burninP)
 burninStates=theseData[,max(state)]*burninP
 burninSamples=theseData[chain==1 & burnin==T,.N]
+#######################################
+
+#Data augmentation
+#######################################
+theseData[,`:=`(flipflop.Rmu=flipflop.mu/flipflop.lambda,flipflop.Rgamma=flipflop.gamma/flipflop.lambda,flipflop.MDbias=flipflop.mu/flipflop.gamma)]
 #######################################
 
 #Assess tree convergence 
