@@ -22,10 +22,15 @@ RUN R -e "pacman::p_load(parallel, treeio, ggtree, svglite, ggbeeswarm, rstan, L
 RUN R -e "pacman::p_load_gh('crukci-bioinformatics/rascal', 'adamallo/rwty')"  
 RUN R -e "BiocManager::install('conumee'); BiocManager::install('minfi')"
 
+RUN R -e "remotes::install_version('matrixStats', version='1.1.0', repo='http://cran.rstudio.com/')" && \
+    R -e "BiocManager::install('IlluminaHumanMethylationEPICanno.ilm10b4.hg19')" && \
+    git clone https://github.com/bmbolstad/preprocessCore.git && \
+    cd preprocessCore && R CMD INSTALL --configure-args="--disable-threading"  .
+
 # add credentials on build
-ARG SSH_PRIVATE_KEY
-RUN mkdir /root/.ssh/
-RUN echo "${SSH_PRIVATE_KEY}" > /root/.ssh/id_rsa && \
+RUN --mount=type=secret,id=ssh_key \
+    mkdir /root/.ssh/ && \
+    cp /run/secrets/ssh_key /root/.ssh/id_rsa && \
     chmod 600 /root/.ssh/id_rsa && \
     touch /root/.ssh/known_hosts
 

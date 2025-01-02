@@ -41,6 +41,7 @@ properties:
     type: integer
     description: Float specifying the top p%% of most heterogeneous CpG loci to include.
     default: 5
+    minimum: 0
   patientInfo:
     type: string
     description: Path to patient metadata in CSV format.
@@ -57,30 +58,37 @@ properties:
     type: number
     description: Prior for the delta parameter
     default: 0.2
+    minimum: 0
   eta:
     type: number
     description: Prior for the eta parameter
     default: 0.7
+    minimum: 0
   kappa:
     type: integer
     description: Prior for the kappa parameter
     default: 50
+    minimum: 0
   mu:
     type: number
     description: Prior for the mu parameter
     default: 0.1
+    minimum: 0
   gamma:
     type: number
     description: Prior for the gamma parameter
     default: 0.1
+    minimum: 0
   lam:
     type: number
     description: Prior for the lambda parameter
     default: 1
+    minimum: 0
   iterations:
     type: integer
     description: Number of MCMC iterations.
     default: 750000
+    minimum: 1
   precision:
     type: integer
     description: Number of significant digits to consider when digitizing the values
@@ -113,17 +121,21 @@ properties:
     type: integer
     description: Number of power posteriors to use for MLE
     default: 100
+    minimum: 0
   mle_iterations:
     type: ["integer", "null"]
     description: Number of MCMC iterations to run in each step. Defaults to MCMC --iterations / --mle-steps.
+    minimum: 0
   mle_sampling:
     type: ["integer", "null"]
     description: Sampling period for the power-posterior MCMC samplers. Defaults to --iterations / 1000
     default: 1000
+    minimum: 0
   nchains:
     type: integer
     description: Number of independent runs in BEAST
     default: 3
+    minimum: 1
   workdir:
     type: string
     description: Path to the output directory

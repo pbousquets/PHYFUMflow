@@ -6,6 +6,7 @@ import os.path
 from aux.checkConfig import readDefaults, makeConfig
 from aux.checkPatients import checkPatientsBetas, checkPatientInfo
 from aux.checkInput import checkInput
+from aux.validate_beast import validate_beast_command
 import random
 
 min_version("6.10.0")
@@ -13,6 +14,7 @@ min_version("6.10.0")
 DEFAULTS = readDefaults(os.path.join(workflow.basedir, "config.schema.yml"))
 config = makeConfig(config, DEFAULTS)
 validate(config, "config.schema.yml")
+validate_beast_command()
 
 workdir: config.get("workdir", ".")
 
@@ -48,6 +50,7 @@ CHAIN_LENGTH = config.get("iterations", 750_000)
 NCHAINS = config.get("nchains", 3)
 SEED = config.get("seed", random.randint(0, 100000))
 random.seed(SEED)
+
 seeds = [random.randint(0, 100000) for _ in range(NCHAINS)] if NCHAINS > 1 else SEED
 
 mode = checkInput(config)
@@ -66,6 +69,11 @@ if config.get("fcpgs"):
     ruleorder: force_cpgs > select_cpgs
 else:
     ruleorder: select_cpgs > force_cpgs
+
+if NCHAINS > 1:
+    ruleorder: logcombiner > logcombiner_one
+else:
+    ruleorder: logcombiner_one > logcombiner
 
 rule all:
     input: expand("results/{patient}/selected_model/{patient}.{ext}", patient=PATIENTS, ext = ["log", "consensus.tree", "tree.pdf", "posterior.pdf"])
@@ -236,9 +244,9 @@ rule beast:
     input:
         "results/XMLs/{patient}.{stemcell}cells.xml"
     output:
-        files = multiext("results/{patient}/seed{seed}/{patient}.{stemcell}cells", ".trees", ".log", ".ops", ".MLE.log")
+        multiext("results/{patient}/seed{seed}/{patient}.{stemcell}cells", ".trees", ".log", ".ops", ".MLE.log")
     log: 
-        "beast_logs/{patient}/{stemcell}cells/{patient}.{seed}.run.log"
+        "results/{patient}/beast_stdout/{patient}.{stemcell}cells.{seed}.stdout"
     params: 
         directory = "results/{patient}/seed{seed}",
         seed = "{seed}"
@@ -246,7 +254,7 @@ rule beast:
         """
         log=$(realpath {log})
         input=$(realpath {input})
-        cd {params.directory}
+        cd {params.directory} || (mkdir {params.directory} && cd {params.directory})
         beast -beagle_off -seed {params.seed} $input > $log 2> $log
         """
 
@@ -254,10 +262,7 @@ rule beast:
 rule qc:
     input:
         trees = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.trees", seed = seeds),
-		#DM
-        #logs = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.log", seed = seeds) if NCHAINS == 1 else expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.MLE.log", seed = seeds),
-		#This did not look right to me. With NCHAINS == 1 the log that should be used is the stdout log (\*.run.log) instead of the trace of the MCMC parameters (\*.cells.log). I suggest changing the names of the variables that store logs to make this clear (log/logs refers to two different things: the .log trace files that BEAST generates and our capture of stdout). I did not do this myself since I do not want to change your coding style
-        logs = expand("beast_logs/{patient}/{stemcell}cells/{patient}.{seed}.run.log", seed = seeds) if NCHAINS == 1 else expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.MLE.log", seed = seeds),
+        logs = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.MLE.log", seed = seeds) if NCHAINS > 1 else expand("results/{{patient}}/beast_stdout/{{patient}}.{{stemcell}}cells.{seed}.stdout", seed = seeds),
     output:
         outdir = directory("results/{patient}/convergence/{patient}.{stemcell}cells/"),
         mle = "results/{patient}/convergence/{patient}.{stemcell}cells/{patient}.{stemcell}cells.MLE.csv" #Generated first with the first script and then we modify it with the second one
@@ -300,31 +305,45 @@ rule logcombiner:
         logcombiner -burnin {params.burnin} -trees $trees {output.combined_trees}
         """
 
+rule logcombiner_one:  #case where only one chain was run
+    input:
+        best = rules.model_selection.output.best,
+    output:
+        combined_logs = "results/{patient}/selected_model/{patient}.log",
+        combined_trees = "results/{patient}/selected_model/{patient}.trees"
+    params: 
+        burnin = int(config.get("burnin", 0.1)*CHAIN_LENGTH)
+    shell:
+        """
+        opt_cells=$(awk -F, 'NR==2 {{print $3}}' {input.best}) 
+        logs=$(ls results/{wildcards.patient}/seed*/{wildcards.patient}.${{opt_cells}}cells.log)
+        trees=$(ls results/{wildcards.patient}/seed*/{wildcards.patient}.${{opt_cells}}cells.trees)
+        grep -v ^"#" $logs > {output.combined_logs}
+        cp $trees {output.combined_trees}
+        """
+
+
 rule plot_tree:
     input:
-        trees = rules.logcombiner.output.combined_trees,
-        log = rules.logcombiner.output.combined_logs,
+        trees = rules.logcombiner.output.combined_trees if NCHAINS > 1 else rules.logcombiner_one.output.combined_trees, # cant user combiner when there's one single chain. results/{patient}/seed{seed}/{patient}.{stemcell}cells.trees
+        log = rules.logcombiner.output.combined_logs if NCHAINS > 1 else rules.logcombiner_one.output.combined_logs # results/{patient}/seed{seed}/{patient}.{stemcell}cells.log
     output:
         consensus = "results/{patient}/selected_model/{patient}.consensus.tree",
         plot = "results/{patient}/selected_model/{patient}.tree.pdf"
     params:
         plot_tree = plot_tree,
         age = lambda wildcards: AGES[wildcards.patient],
-		#DM
-		#burnin should be 0 here, since we are using the combined trees and logs as input, which have already been "cleaned" at the logcombiner step. This burnin option exists in the R script because when NCHAINS==1 the logcombiner step could be skipped and the burning could be done at this step. This seems to be more complicated to implement for this pipeline. I am suggesting to just remove the burnin argument from the plot_tree rule params and fixing it to 0 in the shell call below
-        #burnin = int(config.get("burnin", 0.1))
+        burnin = int(config.get("burnin", 0.1)) if NCHAINS == 1 else 0 # When multiple chains, logcombiner already applies the burnin
     shell:
         """
         treeannotator -heights median {input.trees} {output.consensus}
-		#DM
-        #Rscript {params.plot_tree} {output.consensus} '{wildcards.patient}' {output.plot} {params.burnin} {params.age} {input.log}
-        Rscript {params.plot_tree} {output.consensus} '{wildcards.patient}' {output.plot} 0 {params.age} {input.log}
+        Rscript {params.plot_tree} {output.consensus} '{wildcards.patient}' {output.plot} {params.burnin} {params.age} {input.log}
         """
 
 rule plot_posterior:
     input:
         minibetas = lambda wildcards: aggregate_input(wildcards),
-        log = rules.logcombiner.output.combined_logs,
+        log = rules.logcombiner.output.combined_logs if NCHAINS > 1 else rules.logcombiner_one.output.combined_logs,
         patientInfo = config.get("patientInfo"),
         best = rules.model_selection.output.best
     params:
@@ -338,3 +357,7 @@ rule plot_posterior:
         opt_cells=$(awk -F, 'NR==2 {{print $3}}' {input.best}) 
         python3 {params.plot_post} --betas {input.minibetas} --log {input.log} --samplesheet {input.patientInfo} --age_col {params.age_col} --sample_col {params.sample_col} --cells $opt_cells --output {output}
         """
+onsuccess:
+    shell("[[ -f Rplots.pdf ]] && rm Rplots.pdf || true") # This file is a bug from RWTY
+onerror: 
+    shell("[[ -f Rplots.pdf ]] && rm Rplots.pdf || true")
