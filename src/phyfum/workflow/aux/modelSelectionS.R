@@ -2,6 +2,7 @@ suppressPackageStartupMessages({
   library(pacman)
   p_load(data.table, ggplot2, cowplot, ggbeeswarm)
 })
+if(!interactive()) pdf(NULL) #Avoid generating empty Rplots.pdf when using save_plot
 
 #Hardcoded config
 #######################################
