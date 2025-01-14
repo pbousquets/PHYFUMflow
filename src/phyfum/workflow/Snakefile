@@ -76,7 +76,11 @@ else:
     ruleorder: logcombiner_one > logcombiner
 
 rule all:
-    input: expand("results/{patient}/selected_model/", patient=PATIENTS)
+    input: 
+        expand("results/{patient}/selected_model/", patient=PATIENTS),
+        expand("results/{patient}/{stemcell}cells/{patient}.posterior.pdf", patient=PATIENTS, stemcell=STEMCELLS),
+        expand("results/{patient}/{stemcell}cells/{patient}.consensus.tree", patient=PATIENTS, stemcell=STEMCELLS),
+        expand("results/{patient}/{stemcell}cells/{patient}.tree.pdf/", patient=PATIENTS, stemcell=STEMCELLS)
     
 rule readIDAT:
     input:
@@ -244,11 +248,11 @@ rule beast:
     input:
         "results/XMLs/{patient}.{stemcell}cells.xml"
     output:
-        multiext("results/{patient}/{stemcell}cells/{patient}.{stemcell}cells.seed{seed}", ".trees", ".log", ".ops", ".MLE.log")
+        multiext("results/{patient}/{stemcell}cells/single_chains/{patient}.{stemcell}cells.seed{seed}", ".trees", ".log", ".ops", ".MLE.log")
     log: 
         "results/{patient}/beast_stdout/{patient}.{stemcell}cells.{seed}.stdout"
     params: 
-        directory = "results/{patient}/{stemcell}cells",
+        directory = "results/{patient}/{stemcell}cells/single_chains",
         seed = "{seed}",
     shell:
         """
@@ -268,11 +272,11 @@ rule beast:
        
 rule logcombiner:
     input:
-        trees = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.trees", seed = seeds),
-        logs = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.log", seed = seeds)
+        trees = expand("results/{{patient}}/{{stemcell}}cells/single_chains/{{patient}}.{{stemcell}}cells.seed{seed}.trees", seed = seeds),
+        logs = expand("results/{{patient}}/{{stemcell}}cells/single_chains/{{patient}}.{{stemcell}}cells.seed{seed}.log", seed = seeds)
     output:
-        combined_logs = "results/{patient}/{stemcell}cells/combined/{patient}.log",
-        combined_trees = "results/{patient}/{stemcell}cells/combined/{patient}.trees"
+        combined_logs = "results/{patient}/{stemcell}cells/combined_chains/{patient}.log",
+        combined_trees = "results/{patient}/{stemcell}cells/combined_chains/{patient}.trees"
     params: 
         burnin = int(config.get("burnin", 0.1)*CHAIN_LENGTH)
     shell:
@@ -283,11 +287,11 @@ rule logcombiner:
 
 rule logcombiner_one:  #case where only one chain was run
     input:
-        trees = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.trees", seed = seeds),
-        logs = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.log", seed = seeds),
+        trees = expand("results/{{patient}}/{{stemcell}}cells/single_chains/{{patient}}.{{stemcell}}cells.seed{seed}.trees", seed = seeds),
+        logs = expand("results/{{patient}}/{{stemcell}}cells/single_chains/{{patient}}.{{stemcell}}cells.seed{seed}.log", seed = seeds),
     output:
-        combined_logs = "results/{patient}/{stemcell}cells/combined/{patient}.log",
-        combined_trees = "results/{patient}/{stemcell}cells/combined/{patient}.trees"
+        combined_logs = "results/{patient}/{stemcell}cells/combined_chains/{patient}.log",
+        combined_trees = "results/{patient}/{stemcell}cells/combined_chains/{patient}.trees"
     shell:
         """
         grep -v ^"#" {input.logs} > {output.combined_logs}
@@ -296,8 +300,8 @@ rule logcombiner_one:  #case where only one chain was run
         
 rule qc:
     input:
-        trees = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.trees", seed = seeds),
-        logs = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.MLE.log", seed = seeds) if NCHAINS > 1 else expand("results/{{patient}}/beast_stdout/{{patient}}.{{stemcell}}cells.{seed}.stdout", seed = seeds),
+        trees = expand("results/{{patient}}/{{stemcell}}cells/single_chains/{{patient}}.{{stemcell}}cells.seed{seed}.trees", seed = seeds),
+        logs = expand("results/{{patient}}/{{stemcell}}cells/single_chains/{{patient}}.{{stemcell}}cells.seed{seed}.MLE.log", seed = seeds) if NCHAINS > 1 else expand("results/{{patient}}/beast_stdout/{{patient}}.{{stemcell}}cells.{seed}.stdout", seed = seeds),
     output:
         outdir = directory("results/{patient}/{stemcell}cells/convergence/"),
         mle = "results/{patient}/{stemcell}cells/convergence/{patient}.{stemcell}cells.MLE.csv" #Generated first with the first script and then we modify it with the second one
@@ -351,8 +355,6 @@ rule plot_posterior:
 rule model_selection:
     input:
         mle = expand("results/{{patient}}/{stemcell}cells/convergence/{{patient}}.{stemcell}cells.MLE.csv", stemcell = STEMCELLS),
-        _ = expand("results/{{patient}}/{stemcell}cells/{{patient}}.posterior.pdf", stemcell = STEMCELLS),
-        __ = expand("results/{{patient}}/{stemcell}cells/{{patient}}.tree.pdf", stemcell = STEMCELLS),
     output:
         folder = directory("results/{patient}/selected_model"),
         best = "results/{patient}/selected_model/{patient}.bestFitS.csv",
