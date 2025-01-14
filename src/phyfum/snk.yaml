@@ -76,12 +76,12 @@ cli:
     default: "3-10-2"
     required: false
   delta:
-    type: number
+    type: float
     help: "Prior for the delta parameter"
     default: 0.2
     required: false
   eta:
-    type: number
+    type: float
     help: "Prior for the eta parameter"
     default: 0.7
     required: false
@@ -91,17 +91,17 @@ cli:
     default: 50
     required: false
   mu:
-    type: number
+    type: float
     help: "Prior for the mu parameter"
     default: 0.1
     required: false
   gamma:
-    type: number
+    type: float
     help: "Prior for the gamma parameter"
     default: 0.1
     required: false
   lam:
-    type: number
+    type: float
     help: "Prior for the lambda parameter"
     default: 0.1
     required: false

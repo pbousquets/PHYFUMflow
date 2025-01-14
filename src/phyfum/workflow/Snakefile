@@ -76,7 +76,7 @@ else:
     ruleorder: logcombiner_one > logcombiner
 
 rule all:
-    input: expand("results/{patient}/selected_model/{patient}.{ext}", patient=PATIENTS, ext = ["log", "consensus.tree", "tree.pdf", "posterior.pdf"])
+    input: expand("results/{patient}/selected_model/", patient=PATIENTS)
     
 rule readIDAT:
     input:
@@ -244,92 +244,82 @@ rule beast:
     input:
         "results/XMLs/{patient}.{stemcell}cells.xml"
     output:
-        multiext("results/{patient}/seed{seed}/{patient}.{stemcell}cells", ".trees", ".log", ".ops", ".MLE.log")
+        multiext("results/{patient}/{stemcell}cells/{patient}.{stemcell}cells.seed{seed}", ".trees", ".log", ".ops", ".MLE.log")
     log: 
         "results/{patient}/beast_stdout/{patient}.{stemcell}cells.{seed}.stdout"
     params: 
-        directory = "results/{patient}/seed{seed}",
-        seed = "{seed}"
+        directory = "results/{patient}/{stemcell}cells",
+        seed = "{seed}",
     shell:
         """
         log=$(realpath {log})
         input=$(realpath {input})
         cd {params.directory} || (mkdir {params.directory} && cd {params.directory})
+        mkdir {params.seed} && cd {params.seed}
         beast -beagle_off -seed {params.seed} $input > $log 2> $log
+        ls | while read file
+        do
+            fn=$(echo $file | sed 's/cells/cells.seed{params.seed}/g')
+            mv $file ../$fn
+        done
+        cd .. && rm -d {params.seed}
         """
-
-
-rule qc:
-    input:
-        trees = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.trees", seed = seeds),
-        logs = expand("results/{{patient}}/seed{seed}/{{patient}}.{{stemcell}}cells.MLE.log", seed = seeds) if NCHAINS > 1 else expand("results/{{patient}}/beast_stdout/{{patient}}.{{stemcell}}cells.{seed}.stdout", seed = seeds),
-    output:
-        outdir = directory("results/{patient}/convergence/{patient}.{stemcell}cells/"),
-        mle = "results/{patient}/convergence/{patient}.{stemcell}cells/{patient}.{stemcell}cells.MLE.csv" #Generated first with the first script and then we modify it with the second one
-    params:
-        burnin = config.get("burnin", 0.1),
-        gather_MLE = gather_MLE,
-        convergence = convergence        
-    shell:
-        """
-        Rscript {params.convergence} {params.burnin} {threads} {output.outdir} {input.trees} 2> /dev/null
-        bash {params.gather_MLE} {input.logs} {output.mle}
-        """
-
-rule model_selection:
-    input:
-        expand("results/{{patient}}/convergence/{{patient}}.{stemcell}cells/{{patient}}.{stemcell}cells.MLE.csv", stemcell = STEMCELLS)
-    output:
-        folder = directory("results/{patient}/selected_model"),
-        best = "results/{patient}/selected_model/{patient}.bestFitS.csv"
-    params:
-        model_selection = model_selection
-    shell:
-        "Rscript {params.model_selection} {output.folder} {input}"
 
        
 rule logcombiner:
     input:
-        best = rules.model_selection.output.best,
+        trees = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.trees", seed = seeds),
+        logs = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.log", seed = seeds)
     output:
-        combined_logs = "results/{patient}/selected_model/{patient}.log",
-        combined_trees = "results/{patient}/selected_model/{patient}.trees"
+        combined_logs = "results/{patient}/{stemcell}cells/combined/{patient}.log",
+        combined_trees = "results/{patient}/{stemcell}cells/combined/{patient}.trees"
     params: 
         burnin = int(config.get("burnin", 0.1)*CHAIN_LENGTH)
     shell:
         """
-        opt_cells=$(awk -F, 'NR==2 {{print $3}}' {input.best}) 
-        logs=$(ls results/{wildcards.patient}/seed*/{wildcards.patient}.${{opt_cells}}cells.log)
-        trees=$(ls results/{wildcards.patient}/seed*/{wildcards.patient}.${{opt_cells}}cells.trees)
-        logcombiner -burnin {params.burnin} $logs {output.combined_logs}
-        logcombiner -burnin {params.burnin} -trees $trees {output.combined_trees}
+        logcombiner -burnin {params.burnin} {input.logs} {output.combined_logs}
+        logcombiner -burnin {params.burnin} -trees {input.trees} {output.combined_trees}
         """
 
 rule logcombiner_one:  #case where only one chain was run
     input:
-        best = rules.model_selection.output.best,
+        trees = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.trees", seed = seeds),
+        logs = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.log", seed = seeds),
     output:
-        combined_logs = "results/{patient}/selected_model/{patient}.log",
-        combined_trees = "results/{patient}/selected_model/{patient}.trees"
-    params: 
-        burnin = int(config.get("burnin", 0.1)*CHAIN_LENGTH)
+        combined_logs = "results/{patient}/{stemcell}cells/combined/{patient}.log",
+        combined_trees = "results/{patient}/{stemcell}cells/combined/{patient}.trees"
     shell:
         """
-        opt_cells=$(awk -F, 'NR==2 {{print $3}}' {input.best}) 
-        logs=$(ls results/{wildcards.patient}/seed*/{wildcards.patient}.${{opt_cells}}cells.log)
-        trees=$(ls results/{wildcards.patient}/seed*/{wildcards.patient}.${{opt_cells}}cells.trees)
-        grep -v ^"#" $logs > {output.combined_logs}
-        cp $trees {output.combined_trees}
+        grep -v ^"#" {input.logs} > {output.combined_logs}
+        cp {input.trees} {output.combined_trees}
+        """
+        
+rule qc:
+    input:
+        trees = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.trees", seed = seeds),
+        logs = expand("results/{{patient}}/{{stemcell}}cells/{{patient}}.{{stemcell}}cells.seed{seed}.MLE.log", seed = seeds) if NCHAINS > 1 else expand("results/{{patient}}/beast_stdout/{{patient}}.{{stemcell}}cells.{seed}.stdout", seed = seeds),
+    output:
+        outdir = directory("results/{patient}/{stemcell}cells/convergence/"),
+        mle = "results/{patient}/{stemcell}cells/convergence/{patient}.{stemcell}cells.MLE.csv" #Generated first with the first script and then we modify it with the second one
+    params:
+        burnin = config.get("burnin", 0.1),
+        gather_MLE = gather_MLE,
+        convergence = convergence,
+        prefix = "{patient}.{stemcell}cells"
+    shell:
+        """
+        Rscript {params.convergence} {params.burnin} {threads} {output.outdir}  {params.prefix} {input.trees} 2> /dev/null
+        bash {params.gather_MLE} {input.logs} {output.mle}
         """
 
-
+  
 rule plot_tree:
     input:
         trees = rules.logcombiner.output.combined_trees if NCHAINS > 1 else rules.logcombiner_one.output.combined_trees, # cant user combiner when there's one single chain. results/{patient}/seed{seed}/{patient}.{stemcell}cells.trees
         log = rules.logcombiner.output.combined_logs if NCHAINS > 1 else rules.logcombiner_one.output.combined_logs # results/{patient}/seed{seed}/{patient}.{stemcell}cells.log
     output:
-        consensus = "results/{patient}/selected_model/{patient}.consensus.tree",
-        plot = "results/{patient}/selected_model/{patient}.tree.pdf"
+        consensus = "results/{patient}/{stemcell}cells/{patient}.consensus.tree",
+        plot = "results/{patient}/{stemcell}cells/{patient}.tree.pdf"
     params:
         plot_tree = plot_tree,
         age = lambda wildcards: AGES[wildcards.patient],
@@ -344,20 +334,46 @@ rule plot_posterior:
     input:
         minibetas = lambda wildcards: aggregate_input(wildcards),
         log = rules.logcombiner.output.combined_logs if NCHAINS > 1 else rules.logcombiner_one.output.combined_logs,
+        best = rules.qc.output.mle,
         patientInfo = config.get("patientInfo"),
-        best = rules.model_selection.output.best
     params:
         age_col = age_col,
         sample_col = sample_col,
-        plot_post = plot_post
+        plot_post = plot_post,
+        stemcell = "{stemcell}"
     output: 
-        "results/{patient}/selected_model/{patient}.posterior.pdf"
+        "results/{patient}/{stemcell}cells/{patient}.posterior.pdf"
     shell:
         """
-        opt_cells=$(awk -F, 'NR==2 {{print $3}}' {input.best}) 
-        python3 {params.plot_post} --betas {input.minibetas} --log {input.log} --samplesheet {input.patientInfo} --age_col {params.age_col} --sample_col {params.sample_col} --cells $opt_cells --output {output}
+        python3 {params.plot_post} --betas {input.minibetas} --log {input.log} --samplesheet {input.patientInfo} --age_col {params.age_col} --sample_col {params.sample_col} --cells {params.stemcell} --output {output}
         """
-onsuccess:
-    shell("[[ -f Rplots.pdf ]] && rm Rplots.pdf || true") # This file is a bug from RWTY
-onerror: 
-    shell("[[ -f Rplots.pdf ]] && rm Rplots.pdf || true")
+
+rule model_selection:
+    input:
+        mle = expand("results/{{patient}}/{stemcell}cells/convergence/{{patient}}.{stemcell}cells.MLE.csv", stemcell = STEMCELLS),
+        _ = expand("results/{{patient}}/{stemcell}cells/{{patient}}.posterior.pdf", stemcell = STEMCELLS),
+        __ = expand("results/{{patient}}/{stemcell}cells/{{patient}}.tree.pdf", stemcell = STEMCELLS),
+    output:
+        folder = directory("results/{patient}/selected_model"),
+        best = "results/{patient}/selected_model/{patient}.bestFitS.csv",
+    params:
+        model_selection = model_selection,
+        patient_dir = "results/{patient}/"
+    shell:
+        """
+        Rscript {params.model_selection} {output.folder} {input.mle}
+        optimal_cells=$(awk -F, 'NR==2 {{print $3}}' {output.best}) 
+        ln -s $(realpath {params.patient_dir}/${{optimal_cells}}cells/) {output.folder}
+        """
+
+"""
+rule integrate_over_S:
+    input:
+
+    output:
+
+    shell: 
+        
+        Rscript integratingOverS.R -o ~/projects/flipFlop/infantCrypts/runs/combined/overS/AI_colon_2_overS.trees -b 0 -s 20 -m ~/projects/flipFlop/infantCrypts/analyses/AI_colon_2/AI_colon_2.allS.csv ~/projects/flipFlop/infantCrypts//runs/combined/AI_colon_2_s*.trees
+        
+"""

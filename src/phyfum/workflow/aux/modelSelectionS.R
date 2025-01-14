@@ -54,7 +54,7 @@ if (length(args) <3) {
 baseDir=args[1]
 files=args[-c(1)]
 baseName <- gsub(x = basename(files[1]),pattern = basenameRegex,replacement = "")
-
+print(1111111)
 if(!all(file.exists(files))){
   stop("ERROR: Not all input files exist. ",paste(files,collapse=", "))  ##ForPablo: this is probably not necessary if the pipeline checks that files exist before using this script
 }
@@ -68,10 +68,12 @@ theseDataRaw <- rbindlist(lapply(files,FUN = function(thisFile){
   thisTable <- fread(thisFile)
   thisTable[,`:=`(S=thisS)]
   }))
-
+print(222222)
+print(theseDataRaw)
 theseData <- theseDataRaw[method!="AICm",] #We are not using AIC for now
+print(2.33)
 if(theseData[method=="PP",.N]) warning("Stepping stone and/or path sampling lML estimates not found. This script will use the less-accurate harmonic mean estimator, which is generally recommended against. In our simulation results, it has performed as well as PS and SS for the specific task of finding the optimum S parameter.")
-
+print(3333)
 #Data dump
 allOutputSFileName <- paste0(baseDir,"/",paste(sep=".",baseName,allOutputSuffix))
 write.csv(theseData,file = allOutputSFileName,quote = F,row.names = F)

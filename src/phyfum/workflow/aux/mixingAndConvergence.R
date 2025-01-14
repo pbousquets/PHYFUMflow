@@ -307,7 +307,8 @@ if(rwty.processors > 1){
 setDTthreads(rwty.processors)
 burninP=as.numeric(args[1]) #ForPablo: the default should be 0.1
 baseDir=args[3]
-files=args[-c(1:3)]
+baseName=args[4]
+files=args[-c(1:4)]
 
 if(!all(file.exists(files))){
   stop("ERROR: Not all input files exist. ",paste(files,collapse=", "))
@@ -316,7 +317,6 @@ if(!all(file.exists(files))){
 
 #Preparing output
 #######################################
-baseName <- gsub(x = basename(files[1]),pattern = ".trees",replacement = "")
 outDir <- baseDir #paste(sep="/",baseDir,baseName)
 dir.create(outDir,recursive=T)
 print(paste0("Saving outputs in ",outDir)) #ForPablo: remove?

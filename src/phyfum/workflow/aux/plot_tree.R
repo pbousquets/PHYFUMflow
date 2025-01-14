@@ -30,6 +30,8 @@ age=as.numeric(args[5])
 #Parsing cenancestor information from the log file    
 logDataFile=args[6]
 logData=fread(logDataFile)
+
+print(logData)
 lucaBranch=mean(logData[,luca_branch][floor(nrow(logData)*burnin):nrow(logData)])
 hpdLucaBranch=hdi(logData[,luca_branch][floor(nrow(logData)*burnin):nrow(logData)],credMass = credMass)
 rm(logData) #saving memory
