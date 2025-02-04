@@ -28,6 +28,7 @@ plot_post = workflow.source_path("aux/plot_posterior_predictive.py")
 convergence = workflow.source_path("aux/mixingAndConvergence.R")
 gather_MLE = workflow.source_path("aux/gatherMLE.sh")
 model_selection = workflow.source_path("aux/modelSelectionS.R")
+integrate_over_S = workflow.source_path("aux/integratingOverS.R")
 manifest = workflow.source_path("data/MethylationEPIC_v-1-0_B4.csv")
 crossreactivefile = workflow.source_path("data/13059_2016_1066_MOESM1_ESM.csv")
 
@@ -80,7 +81,10 @@ rule all:
         expand("results/{patient}/selected_model/", patient=PATIENTS),
         expand("results/{patient}/{stemcell}cells/{patient}.posterior.pdf", patient=PATIENTS, stemcell=STEMCELLS),
         expand("results/{patient}/{stemcell}cells/{patient}.consensus.tree", patient=PATIENTS, stemcell=STEMCELLS),
-        expand("results/{patient}/{stemcell}cells/{patient}.tree.pdf/", patient=PATIENTS, stemcell=STEMCELLS)
+        expand("results/{patient}/{stemcell}cells/{patient}.tree.pdf/", patient=PATIENTS, stemcell=STEMCELLS),
+        expand("results/{patient}/integrated_solution/{patient}.consensus.tree", patient=PATIENTS),
+        expand("results/{patient}/integrated_solution/{patient}.tree.pdf", patient=PATIENTS),
+#        expand("results/{patient}/integrated_solution/{patient}.posterior.pdf", patient=PATIENTS)
     
 rule readIDAT:
     input:
@@ -304,7 +308,7 @@ rule qc:
         logs = expand("results/{{patient}}/{{stemcell}}cells/single_chains/{{patient}}.{{stemcell}}cells.seed{seed}.MLE.log", seed = seeds) if NCHAINS > 1 else expand("results/{{patient}}/beast_stdout/{{patient}}.{{stemcell}}cells.{seed}.stdout", seed = seeds),
     output:
         outdir = directory("results/{patient}/{stemcell}cells/convergence/"),
-        mle = "results/{patient}/{stemcell}cells/convergence/{patient}.{stemcell}cells.MLE.csv" #Generated first with the first script and then we modify it with the second one
+        mle = "results/{patient}/{stemcell}cells/convergence/{patient}.{stemcell}cells.MLE.csv", #Generated first with the first script and then we modify it with the second one
     params:
         burnin = config.get("burnin", 0.1),
         gather_MLE = gather_MLE,
@@ -358,6 +362,7 @@ rule model_selection:
     output:
         folder = directory("results/{patient}/selected_model"),
         best = "results/{patient}/selected_model/{patient}.bestFitS.csv",
+        allS = "results/{patient}/selected_model/{patient}.allS.csv",
     params:
         model_selection = model_selection,
         patient_dir = "results/{patient}/"
@@ -368,14 +373,37 @@ rule model_selection:
         ln -s $(realpath {params.patient_dir}/${{optimal_cells}}cells/) {output.folder}
         """
 
-"""
+
 rule integrate_over_S:
     input:
-
+        allS = "results/{patient}/selected_model/{patient}.allS.csv",
+        trees = expand("results/{{patient}}/{stemcell}cells/combined_chains/{{patient}}.trees", stemcell=STEMCELLS)
     output:
-
+        overS_tree = "results/{patient}/integrated_solution/{patient}.overS.trees",
+        overS_log = "results/{patient}/integrated_solution/{patient}.overS.log"
+    params:
+        seed = SEED,
+        integrate_over_S = integrate_over_S
     shell: 
-        
-        Rscript integratingOverS.R -o ~/projects/flipFlop/infantCrypts/runs/combined/overS/AI_colon_2_overS.trees -b 0 -s 20 -m ~/projects/flipFlop/infantCrypts/analyses/AI_colon_2/AI_colon_2.allS.csv ~/projects/flipFlop/infantCrypts//runs/combined/AI_colon_2_s*.trees
-        
+        """
+        Rscript {params.integrate_over_S} -o {output.overS_tree} -b 0 -s {params.seed} -m {input.allS} {input.trees}
+        [[ -f {output.overS_log} ]]
+        """
+
+use rule plot_tree as plot_tree_integration with:
+    input:
+        trees = "results/{patient}/integrated_solution/{patient}.overS.trees",
+        log = "results/{patient}/integrated_solution/{patient}.overS.log" 
+    output:
+        consensus = "results/{patient}/integrated_solution/{patient}.consensus.tree",
+        plot = "results/{patient}/integrated_solution/{patient}.tree.pdf"
+
+"""
+use rule plot_posterior as plot_posterior_integration with:
+    input:
+        minibetas = lambda wildcards: aggregate_input(wildcards),
+        log = "results/{patient}/integrated_solution/{patient}.overS.log",
+        patientInfo = config.get("patientInfo"),
+    output: 
+        out = "results/{patient}/integrated_solution/{patient}.posterior.pdf",
 """

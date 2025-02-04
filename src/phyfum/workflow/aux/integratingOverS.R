@@ -53,7 +53,8 @@ if(!is.null(mleFile))
 #Loading data and removing burnin
 if(burnin >=1 || burnin < 0)
   stop("Burnin must be given as a proportion")
-S <- as.numeric(gsub(pattern = ".*_s([0-9]*).trees",replacement = "\\1",basename(treeFiles)))
+
+S <- as.numeric(gsub(".*?/([0-9]+)cells/.*", "\\1",treeFiles))
 treeLists <- lapply(treeFiles,FUN = function(x){
   trees <- read.nexus(x)
   nRemove <- ceiling(length(trees)*burnin)
@@ -64,6 +65,7 @@ logList <- lapply(logFiles,FUN = function(x){
   nRemove <- ceiling(nrow(thisLog)*burnin)
   return(thisLog[-seq(1,nRemove)])
 })
+
 
 #Making sure posterior samples are complete
 traceLengthMatrix <- matrix(c(sapply(logList,nrow),sapply(treeLists,length)),ncol = 2) #Lengths of log [,1] and tree [,2] traces for each chain

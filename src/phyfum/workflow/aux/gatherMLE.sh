@@ -49,4 +49,6 @@ fi
 ps=$(echo "$resultContent" | grep 'path sampling)' | sed "s/^.*= \(.*\)$/\\1/g")
 ss=$(echo "$resultContent" | grep 'stone sampling)' | sed "s/^.*= \(.*\)$/\\1/g")
 
-echo -e "NA,SS,$ss\nNA,PS,$ps" >> $outputFile
+# the sample name is in everyrow, first field of the csv
+name=$(tail -n1 $outputFile | cut -d',' -f1)
+echo -e "$name,SS,$ss\n$name,PS,$ps" >> $outputFile
