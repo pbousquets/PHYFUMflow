@@ -84,7 +84,7 @@ rule all:
         expand("results/{patient}/{stemcell}cells/{patient}.tree.pdf/", patient=PATIENTS, stemcell=STEMCELLS),
         expand("results/{patient}/integrated_solution/{patient}.consensus.tree", patient=PATIENTS),
         expand("results/{patient}/integrated_solution/{patient}.tree.pdf", patient=PATIENTS),
-#        expand("results/{patient}/integrated_solution/{patient}.posterior.pdf", patient=PATIENTS)
+        expand("results/{patient}/integrated_solution/{patient}.posterior.pdf", patient=PATIENTS)
     
 rule readIDAT:
     input:
@@ -348,12 +348,11 @@ rule plot_posterior:
         age_col = age_col,
         sample_col = sample_col,
         plot_post = plot_post,
-        stemcell = "{stemcell}"
     output: 
         "results/{patient}/{stemcell}cells/{patient}.posterior.pdf"
     shell:
         """
-        python3 {params.plot_post} --betas {input.minibetas} --log {input.log} --samplesheet {input.patientInfo} --age_col {params.age_col} --sample_col {params.sample_col} --cells {params.stemcell} --output {output}
+        python3 {params.plot_post} --betas {input.minibetas} --log {input.log} --samplesheet {input.patientInfo} --age_col {params.age_col} --sample_col {params.sample_col} --output {output}
         """
 
 rule model_selection:
@@ -398,12 +397,18 @@ use rule plot_tree as plot_tree_integration with:
         consensus = "results/{patient}/integrated_solution/{patient}.consensus.tree",
         plot = "results/{patient}/integrated_solution/{patient}.tree.pdf"
 
-"""
-use rule plot_posterior as plot_posterior_integration with:
+rule plot_posterior_integration:
     input:
         minibetas = lambda wildcards: aggregate_input(wildcards),
         log = "results/{patient}/integrated_solution/{patient}.overS.log",
         patientInfo = config.get("patientInfo"),
+    params:
+        age_col = age_col,
+        sample_col = sample_col,
+        plot_post = plot_post,
     output: 
-        out = "results/{patient}/integrated_solution/{patient}.posterior.pdf",
-"""
+        "results/{patient}/integrated_solution/{patient}.posterior.pdf"
+    shell:
+        """
+        python3 {params.plot_post} --betas {input.minibetas} --log {input.log} --samplesheet {input.patientInfo} --age_col {params.age_col} --sample_col {params.sample_col} --output {output}
+        """

@@ -133,5 +133,5 @@ if(length(unique(c(sapply(logList,nrow),sapply(treeLists,length)))) == 1) {
 }
 dir.create(dirname(outTreeFile),showWarnings = F,recursive = T)
 write.nexus(outTrees, file = outTreeFile)
-writeLines(c("# Integrating over S after Phyfum",paste0("# ",now()),paste0(collapse=",",c("# arguments:",args))),outLogFile)
+writeLines(c("# Integrating over S after Phyfum",paste0("# ",now())),outLogFile)
 suppressWarnings(write.table(outLog, file = outLogFile,quote = F,row.names = F,sep = "\t",append = T))

@@ -104,16 +104,18 @@ def simulate_beta(params, S, age, N):
 @click.option("--log", help="BEAST log output", required=True, type=click.Path(exists=True))
 @click.option("--samplesheet", help="Metadata CSV containing sample and age columns", required=True, type=click.Path(exists=True))
 @click.option('--output', type=click.Path(exists=False), required=True, help='Output name (pdf)')
-@click.option("--cells", "S", help="Number of stem cells used in the model", required=True, type=int)
 @click.option("--sample_col", help="Number of stem cells used in the model", required=True, type=str)
 @click.option("--age_col", help="Number of stem cells used in the model", required=True, type=str)
-def main(betas, log, samplesheet, output, S, sample_col, age_col):
+def main(betas, log, samplesheet, output, sample_col, age_col):
 
     assert samplesheet.endswith(".csv") and betas.endswith(".csv") and log.endswith(".log"), "Unexpected input format. The betas and samplesheet should be a .csv file, while log should be a .log file"
     df = pd.read_csv(betas, index_col=0)
     df.columns = df.columns.astype(str)
 
     posterior = pd.read_csv(log, index_col=0, sep="\t", comment="#")
+    # Get the column alignment.stemCells as a list of integer
+    stemCells = posterior["alignment.stemCells"].values.astype(int)
+
     posterior = posterior[["flipflop.lambda", "flipflop.mu", "flipflop.gamma", "errorModel.deltaOffset", "errorModel.etaOffset", "errorModel.kappaScale"]]
 
     samplesheet = pd.read_csv(samplesheet)
@@ -130,6 +132,7 @@ def main(betas, log, samplesheet, output, S, sample_col, age_col):
 
             for p in range(P):
                 params = posterior.iloc[p].values
+                S = stemCells[p]
                 y_hat[p, :] = simulate_beta(params, S, age, N)
 
             fig, ax = plt.subplots()
