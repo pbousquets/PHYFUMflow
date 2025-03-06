@@ -31,7 +31,7 @@ phyfum run --input ${input_dir}\
  --stemcells 3-10-3 
 ```
 
-If you have already pre-processed the data and have the beta values, you can run phyfum in __trees__ mode. The pipeline will simply deploy the XMLcreator tool to format the input data as expected by [our modified version](https://github.com/pbousquets/beast-mcmc-flipflop) of [BEAST](https://beast.community/) and run the inference.
+If you have already pre-processed the data and have the beta values, you can run phyfum in __trees__ mode. The pipeline will simply deploy the XMLcreator tool to format the input data as expected by [our modified version](https://github.com/pbousquets/PHYFUM) of [BEAST](https://beast.community/) and run the inference.
 
 ```{bash}
 input_dir="beta_dir"
@@ -99,7 +99,7 @@ pbousquets/phyfum --input ${input}\
 
 ### Manual installation
 
-Prior to installing phyfum, you'll need to install [our modified version of BEAST](https://github.com/pbousquets/beast-mcmc-flipflop) to enable fCpGs to be analyzed under the framework. Then, make sure you have installed __python3__ and __R (>4.0.0)__ and simply run:
+Prior to installing phyfum, you'll need to install [our modified version of BEAST](https://github.com/pbousquets/PHYFUM) to enable fCpGs to be analyzed under the framework. Then, make sure you have installed __python3__ and __R (>4.0.0)__ and simply run:
 
 ```console
 pip install phyfum

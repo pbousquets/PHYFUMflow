@@ -35,12 +35,12 @@ RUN --mount=type=secret,id=ssh_key \
     touch /root/.ssh/known_hosts
 
 RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
-RUN git clone git@github.com:pbousquets/beast-mcmc-flipflop.git
+RUN git clone git@github.com:pbousquets/PHYFUM.git
 
 # Set up environment variables
 ENV HOME=/home
 ENV JAVA_HOME=/project/jdk-21.0.4
-ENV PATH=$JAVA_HOME/bin:/project/beast-mcmc-flipflop/release/Linux/Phyfumv1.0_RC1/bin:$PATH
+ENV PATH=$JAVA_HOME/bin:/project/PHYFUM/release/Linux/Phyfumv1.0_RC1/bin:$PATH
 
 # install the correct version of java!!!!!
 RUN wget -O jdk.tar.gz https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz  && tar zxvf jdk.tar.gz
@@ -61,4 +61,4 @@ ENV ANT_OPTS="-Xms256M -Xmx512M"
 ENV PATH="${PATH}:${HOME}/bin:${ANT_HOME}/bin"
 
 # Install beast
-RUN cd /project/beast-mcmc-flipflop && ant linux
+RUN cd /project/PHYFUM && ant linux
