@@ -1,0 +1,18 @@
+
+Operator analysis
+Operator                                          Tuning   Count      Time     Time/Op  Pr(accept) 
+scale(errorModel.deltaOffset)                     0.655   10         68       6.8      0.5         
+scale(errorModel.etaOffset)                       0.812   10         59       5.9      0.4         
+scale(errorModel.kappaScale)                      0.954   7          47       6.71     0.0         
+scale(flipflop.mu)                                0.621   11         24       2.18     0.5455      
+scale(flipflop.gamma)                             0.928   7          15       2.14     0.1429      
+scale(flipflop.lambda)                            0.825   8          18       2.25     0.5         
+scale(constant.popSize)                           0.156   37         0        0.0      0.1622      
+subtreeSlide(treeModel)                           8.002   191        146      0.76     0.2356      
+Narrow Exchange(treeModel)                                155        139      0.9      0.1355      
+Wide Exchange(treeModel)                                  37         21       0.57     0.027       
+wilsonBalding(treeModel)                                  43         14       0.33     0.0         
+scale(treeModel.rootHeight)                       0.726   50         15       0.3      0.08        
+uniform(nodeHeights(treeModel))                           392        400      1.02     0.2015      
+up:flipflop.mu flipflop.gamma flipflop.lambda down:nodeHeights(treeModel) 0.791   32         60       1.88     0.0625      
+

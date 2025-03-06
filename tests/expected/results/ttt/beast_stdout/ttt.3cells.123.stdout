@@ -1,0 +1,355 @@
+WARNING: Likelihood component, flipflopSubstitutionModel, created but not used in the MCMC
+WARNING: Likelihood component, branchRates, created but not used in the MCMC
+WARNING: Likelihood component, flipflopSubstitutionModel, created but not used in the MCMC
+WARNING: Likelihood component, branchRates, created but not used in the MCMC
+exei@cs.auckland.ac.nz
+                              
+             Institute of Evolutionary Biology
+                  University of Edinburgh
+                     a.rambaut@ed.ac.uk
+                              
+              David Geffen School of Medicine
+           University of California, Los Angeles
+                     msuchard@ucla.edu
+                              
+                Downloads, Help & Resources:
+                 	http://beast.bio.ed.ac.uk
+                              
+Source code distributed under the GNU Lesser General Public License:
+          	http://github.com/beast-dev/beast-mcmc
+                              
+                     BEAST developers:
+	Alex Alekseyenko, Guy Baele, Trevor Bedford, Filip Bielejec, Erik Bloomquist, Matthew Hall,
+	Joseph Heled, Sebastian Hoehna, Denise Kuehnert, Philippe Lemey, Wai Lok Sibon Li,
+	Gerton Lunter, Sidney Markowitz, Vladimir Minin, Michael Defoin Platel,
+          	Oliver Pybus, Chieh-Hsi Wu, Walter Xie
+                              
+                         Thanks to:
+    	Roald Forsberg, Beth Shapiro and Korbinian Strimmer
+
+
+Random number seed: 123
+
+
+Parsing XML file: ttt.3cells.xml
+  File encoding: UTF8
+Looking for plugins in /mnt/d/Lab/Estancia/Phylogenomics/package/phyfum/tests/expected/results/ttt/3cells/single_chains/123/plugins
+
+---
+
+Site patterns 'alignment' created:
+  - Taxa count = 5
+  - Site count = 2000
+  - Expected states = 10
+
+---
+
+Using allele frequency sequence error model with 3 stem cells
+  - Initial delta = 0.2
+  - Initial eta = 0.7
+  - Initial kappa = 50.0
+Creating the tree model, 'treeModel'
+  initial tree topology = (((a,b),(c,d)),e)
+  tree height = 1.938976156561492
+Using strict molecular clock model.
+
+---
+
+Creating FlipFlip model
+	- Initial gamma = 0.1
+	- Initial lambda = 0.1
+	- Initial mu = 0.1
+	- Normalization using flux of out-states: false
+	- Using a frequency model to set the transition matrix: false
+	- Initial frequency model: {0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1}
+---
+Creating site model.
+Creating cenancestor state frequencies model 'cenancestor.frequencies': 
+	Setting frequencies programatically using the methylatedProportion parameter: 0.5
+	Frequencies = {0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0.5}
+New cenancestor tree likelihood:
+	- Intree nodes = 9
+	- Total nodes = 10
+	- WARNING: using cenancestor height to determine branch length.
+		Branch length should not be operated upon.
+		MRCA should have a prior/lower limit that avoids negative cenancestor branch lengths
+	- Initial cenancestor height = 45.0
+	- Initial cenancestor branch length = 1.0
+	- Recalculated cenancestor branch length =43.061023843438505
+TreeLikelihood(treeModel) using Java cenancestor FlipFlop likelihood core
+  Ignoring ambiguities in tree likelihood.
+  With 2000 unique site patterns.
+Branch rate model used: strictClockCenancestorBranchRates
+Optimization Schedule: default
+Likelihood computation is using an auto sizing thread pool.
+Creating the MCMC chain:
+  chainLength=1000
+  autoOptimize=true
+  autoOptimize delayed for 10 steps
+
+
+Citations for this analysis: 
+
+FRAMEWORK
+BEAST primary citation:
+	Drummond AJ, Suchard MA, Xie Dong, Rambaut A (2012) Bayesian phylogenetics with BEAUti and the BEAST 1.7. Mol Biol Evol. 29, 1969-1973. DOI:10.1093/molbev/mss075
+
+SUBSTITUTION MODELS
+Sequence error model:
+	Rambaut A, Ho SYW, Drummond AJ, Shapiro B (2008) Accommodating the effect of ancient DNA damage on inferences of demographic histories. Mol Biol Evol. 26, 245-248. DOI:10.1093/molbev/msn256
+	Felsenstein J (2004) Inferring Phylogenies. Sinauer Associates. 
+Complex-diagonalizable, irreversible substitution model:
+	Edwards CJ, Suchard MA, Lemey P, Welch JJ, Barnes I, Fulton TL, Barnett R, O'Connell TC, Coxon P, Monaghan N, Valdiosera CE, Lorenzen ED, Willerslev E, Baryshnikov GF, Rambaut A, Thomas MG, Bradley DG, Shapiro B (2011) Ancient hybridization and an Irish origin for the modern polar bear matriline. Current Biology. 21, 1251-1258
+
+
+# BEAST v1.8.4
+# Generated Wed Mar 05 17:17:34 WET 2025 [seed=123]
+# -beagle_off -seed 123 /mnt/d/Lab/Estancia/Phylogenomics/package/phyfum/tests/expected/results/XMLs/ttt.3cells.xml
+state	Posterior   	Prior       	Likelihood  
+0	-48110.0621 	-44.5163    	-48065.5458 	-
+500	-10880.1040 	-43.5789    	-10836.5251 	-
+1000	-2069.3065  	-33.6867    	-2035.6198  	-
+
+Operator analysis
+Operator                                          Tuning   Count      Time     Time/Op  Pr(accept) 
+scale(errorModel.deltaOffset)                     0.655   10         68       6.8      0.5         
+scale(errorModel.etaOffset)                       0.812   10         59       5.9      0.4         
+scale(errorModel.kappaScale)                      0.954   7          47       6.71     0.0         
+scale(flipflop.mu)                                0.621   11         24       2.18     0.5455      
+scale(flipflop.gamma)                             0.928   7          15       2.14     0.1429      
+scale(flipflop.lambda)                            0.825   8          18       2.25     0.5         
+scale(constant.popSize)                           0.156   37         0        0.0      0.1622      
+subtreeSlide(treeModel)                           8.002   191        146      0.76     0.2356      
+Narrow Exchange(treeModel)                                155        139      0.9      0.1355      
+Wide Exchange(treeModel)                                  37         21       0.57     0.027       
+wilsonBalding(treeModel)                                  43         14       0.33     0.0         
+scale(treeModel.rootHeight)                       0.726   50         15       0.3      0.08        
+uniform(nodeHeights(treeModel))                           392        400      1.02     0.2015      
+up:flipflop.mu flipflop.gamma flipflop.lambda down:nodeHeights(treeModel) 0.791   32         60       1.88     0.0625      
+
+4.836 seconds
+
+
+Creating the Marginal Likelihood Estimator chain:
+  chainLength=500
+  pathSteps=100
+  pathScheme=betaQuantile(0.3)
+
+
+Citations for this analysis: 
+
+FRAMEWORK
+Marginal likelihood estimation using path sampling / stepping-stone sampling (first 2 citations) and generalized stepping-stone sampling (3rd citation):
+	Baele G, Lemey P, Bedford T, Rambaut A, Suchard MA, Alekseyenko AV (2012) Improving the accuracy of demographic and molecular clock model comparison while accommodating phylogenetic uncertainty. Mol. Biol. Evol.. 29, 2157-2167
+	Baele G, Li WLS, Drummond AJ, Suchard MA, Lemey P (2013) Accurate model selection of relaxed molecular clocks in Bayesian phylogenetics. Mol. Biol. Evol.. 30, 239-243
+	Baele G, Lemey P, Suchard MA (2016) Genealogical working distributions for Bayesian model testing with phylogenetic uncertainty. Syst. Biol.. 65, 250-264
+
+
+Attempting theta (1/101) = 1.0 for 500 iterations + 50 burnin.
+Attempting theta (2/101) = 0.9670538286027488 for 500 iterations + 50 burnin.
+Attempting theta (3/101) = 0.9348750848354606 for 500 iterations + 50 burnin.
+Attempting theta (4/101) = 0.9034534504706005 for 500 iterations + 50 burnin.
+Attempting theta (5/101) = 0.872778642317937 for 500 iterations + 50 burnin.
+Attempting theta (6/101) = 0.8428404124649498 for 500 iterations + 50 burnin.
+Attempting theta (7/101) = 0.8136285485214058 for 500 iterations + 50 burnin.
+Attempting theta (8/101) = 0.785132873868218 for 500 iterations + 50 burnin.
+Attempting theta (9/101) = 0.7573432479107086 for 500 iterations + 50 burnin.
+Attempting theta (10/101) = 0.7302495663364068 for 500 iterations + 50 burnin.
+Attempting theta (11/101) = 0.7038417613775041 for 500 iterations + 50 burnin.
+Attempting theta (12/101) = 0.678109802078112 for 500 iterations + 50 burnin.
+Attempting theta (13/101) = 0.6530436945664579 for 500 iterations + 50 burnin.
+Attempting theta (14/101) = 0.6286334823321714 for 500 iterations + 50 burnin.
+Attempting theta (15/101) = 0.6048692465088115 for 500 iterations + 50 burnin.
+Attempting theta (16/101) = 0.5817411061617966 for 500 iterations + 50 burnin.
+Attempting theta (17/101) = 0.5592392185819061 for 500 iterations + 50 burnin.
+Attempting theta (18/101) = 0.5373537795845235 for 500 iterations + 50 burnin.
+Attempting theta (19/101) = 0.5160750238148092 for 500 iterations + 50 burnin.
+Attempting theta (20/101) = 0.49539322505898753 for 500 iterations + 50 burnin.
+Attempting theta (21/101) = 0.4752986965619486 for 500 iterations + 50 burnin.
+Attempting theta (22/101) = 0.4557817913513756 for 500 iterations + 50 burnin.
+Attempting theta (23/101) = 0.436832902568608 for 500 iterations + 50 burnin.
+Attempting theta (24/101) = 0.418442463806474 for 500 iterations + 50 burnin.
+Attempting theta (25/101) = 0.40060094945432584 for 500 iterations + 50 burnin.
+Attempting theta (26/101) = 0.38329887505052945 for 500 iterations + 50 burnin.
+Attempting theta (27/101) = 0.36652679764266793 for 500 iterations + 50 burnin.
+Attempting theta (28/101) = 0.3502753161557333 for 500 iterations + 50 burnin.
+Attempting theta (29/101) = 0.33453507176859365 for 500 iterations + 50 burnin.
+Attempting theta (30/101) = 0.3192967482990375 for 500 iterations + 50 burnin.
+Attempting theta (31/101) = 0.30455107259771197 for 500 iterations + 50 burnin.
+Attempting theta (32/101) = 0.2902888149512887 for 500 iterations + 50 burnin.
+Attempting theta (33/101) = 0.2765007894952082 for 500 iterations + 50 burnin.
+Attempting theta (34/101) = 0.26317785463637045 for 500 iterations + 50 burnin.
+Attempting theta (35/101) = 0.2503109134861649 for 500 iterations + 50 burnin.
+Attempting theta (36/101) = 0.23789091430424544 for 500 iterations + 50 burnin.
+Attempting theta (37/101) = 0.22590885095348726 for 500 iterations + 50 burnin.
+Attempting theta (38/101) = 0.21435576336658177 for 500 iterations + 50 burnin.
+Attempting theta (39/101) = 0.20322273802475363 for 500 iterations + 50 burnin.
+Attempting theta (40/101) = 0.19250090844911202 for 500 iterations + 50 burnin.
+Attempting theta (41/101) = 0.1821814557051778 for 500 iterations + 50 burnin.
+Attempting theta (42/101) = 0.17225560892116176 for 500 iterations + 50 burnin.
+Attempting theta (43/101) = 0.1627146458206033 for 500 iterations + 50 burnin.
+Attempting theta (44/101) = 0.15354989327001706 for 500 iterations + 50 burnin.
+Attempting theta (45/101) = 0.14475272784223595 for 500 iterations + 50 burnin.
+Attempting theta (46/101) = 0.13631457639618247 for 500 iterations + 50 burnin.
+Attempting theta (47/101) = 0.12822691667385014 for 500 iterations + 50 burnin.
+Attempting theta (48/101) = 0.12048127791532504 for 500 iterations + 50 burnin.
+Attempting theta (49/101) = 0.11306924149273806 for 500 iterations + 50 burnin.
+Attempting theta (50/101) = 0.10598244156409653 for 500 iterations + 50 burnin.
+Attempting theta (51/101) = 0.09921256574801246 for 500 iterations + 50 burnin.
+Attempting theta (52/101) = 0.09275135582041685 for 500 iterations + 50 burnin.
+Attempting theta (53/101) = 0.08659060843442937 for 500 iterations + 50 burnin.
+Attempting theta (54/101) = 0.08072217586463991 for 500 iterations + 50 burnin.
+Attempting theta (55/101) = 0.07513796677715448 for 500 iterations + 50 burnin.
+Attempting theta (56/101) = 0.06982994702686253 for 500 iterations + 50 burnin.
+Attempting theta (57/101) = 0.06479014048349967 for 500 iterations + 50 burnin.
+Attempting theta (58/101) = 0.06001062988820621 for 500 iterations + 50 burnin.
+Attempting theta (59/101) = 0.055483557742424465 for 500 iterations + 50 burnin.
+Attempting theta (60/101) = 0.051201127231133854 for 500 iterations + 50 burnin.
+Attempting theta (61/101) = 0.04715560318259695 for 500 iterations + 50 burnin.
+Attempting theta (62/101) = 0.043339313066983146 for 500 iterations + 50 burnin.
+Attempting theta (63/101) = 0.039744648036453514 for 500 iterations + 50 burnin.
+Attempting theta (64/101) = 0.03636406400953165 for 500 iterations + 50 burnin.
+Attempting theta (65/101) = 0.033190082802857665 for 500 iterations + 50 burnin.
+Attempting theta (66/101) = 0.030215293313728214 for 500 iterations + 50 burnin.
+Attempting theta (67/101) = 0.027432352757170694 for 500 iterations + 50 burnin.
+Attempting theta (68/101) = 0.024833987961691194 for 500 iterations + 50 burnin.
+Attempting theta (69/101) = 0.0224129967282808 for 500 iterations + 50 burnin.
+Attempting theta (70/101) = 0.02016224925777198 for 500 iterations + 50 burnin.
+Attempting theta (71/101) = 0.018074689652218572 for 500 iterations + 50 burnin.
+Attempting theta (72/101) = 0.016143337496641163 for 500 iterations + 50 burnin.
+Attempting theta (73/101) = 0.014361289528251987 for 500 iterations + 50 burnin.
+Attempting theta (74/101) = 0.01272172140116927 for 500 iterations + 50 burnin.
+Attempting theta (75/101) = 0.011217889555676172 for 500 iterations + 50 burnin.
+Attempting theta (76/101) = 0.009843133202303695 for 500 iterations + 50 burnin.
+Attempting theta (77/101) = 0.008590876432461226 for 500 iterations + 50 burnin.
+Attempting theta (78/101) = 0.007454630469050414 for 500 iterations + 50 burnin.
+Attempting theta (79/101) = 0.006427996072542175 for 500 iterations + 50 burnin.
+Attempting theta (80/101) = 0.0055046661204539325 for 500 iterations + 50 burnin.
+Attempting theta (81/101) = 0.004678428381140585 for 500 iterations + 50 burnin.
+Attempting theta (82/101) = 0.003943168506448259 for 500 iterations + 50 burnin.
+Attempting theta (83/101) = 0.0032928732722604936 for 500 iterations + 50 burnin.
+Attempting theta (84/101) = 0.002721634101543468 for 500 iterations + 50 burnin.
+Attempting theta (85/101) = 0.002223650911514547 for 500 iterations + 50 burnin.
+Attempting theta (86/101) = 0.0017932363354956555 for 500 iterations + 50 burnin.
+Attempting theta (87/101) = 0.001424820381547943 for 500 iterations + 50 burnin.
+Attempting theta (88/101) = 0.0011129556050964646 for 500 iterations + 50 burnin.
+Attempting theta (89/101) = 8.523228928886101E-4 for 500 iterations + 50 burnin.
+Attempting theta (90/101) = 6.377379829750564E-4 for 500 iterations + 50 burnin.
+Attempting theta (91/101) = 4.6415888336127784E-4 for 500 iterations + 50 burnin.
+Attempting theta (92/101) = 3.2669440602401713E-4 for 500 iterations + 50 burnin.
+Attempting theta (93/101) = 2.2061411225926482E-4 for 500 iterations + 50 burnin.
+Attempting theta (94/101) = 1.4136008578343349E-4 for 500 iterations + 50 burnin.
+Attempting theta (95/101) = 8.45611410492474E-5 for 500 iterations + 50 burnin.
+Attempting theta (96/101) = 4.605039373300482E-5 for 500 iterations + 50 burnin.
+Attempting theta (97/101) = 2.1887692117461713E-5 for 500 iterations + 50 burnin.
+Attempting theta (98/101) = 8.389527766075414E-6 for 500 iterations + 50 burnin.
+Attempting theta (99/101) = 2.171534093275924E-6 for 500 iterations + 50 burnin.
+Attempting theta (100/101) = 2.1544346900318824E-7 for 500 iterations + 50 burnin.
+Attempting theta (101/101) = 0.0 for 500 iterations + 50 burnin.
+1 file(s) found with marginal likelihood samples
+PathParameter	MaxPathLikelihood	MLContribution
+0.0000	2643.9	-0.00073639
+2.1544e-07	491.20	-0.012434
+2.1715e-06	-2358.7	-0.045626
+8.3895e-06	-6027.0	-0.12139
+2.1888e-05	-3096.5	-0.22219
+4.6050e-05	-982.99	-0.14127
+8.4561e-05	482.05	-0.10877
+0.00014136	1297.3	-0.017357
+0.00022061	1343.5	-0.077527
+0.00032669	2079.8	-0.056648
+0.00046416	2378.2	-0.12465
+0.00063774	3348.2	-0.017996
+0.00085232	3812.2	0.72931
+0.0011130	3900.2	0.64073
+0.0014248	4110.4	1.1141
+0.0017932	4033.7	1.5191
+0.0022237	4046.5	1.6513
+0.0027216	4725.8	2.4520
+0.0032929	4747.0	2.8584
+0.0039432	4560.0	3.0017
+0.0046784	4390.3	3.3008
+0.0055047	4863.6	3.9984
+0.0064280	4856.2	4.7710
+0.0074546	4884.1	5.3506
+0.0085909	4921.3	5.5694
+0.0098431	4895.3	5.9837
+0.011218	4930.1	7.1335
+0.012722	4938.9	7.7547
+0.014361	4934.7	8.5833
+0.016143	4867.2	9.1363
+0.018075	4929.0	9.9657
+0.020162	4969.4	11.002
+0.022413	4984.5	11.825
+0.024834	4937.0	12.475
+0.027432	4970.5	13.557
+0.030215	4970.5	14.591
+0.033190	4914.8	15.364
+0.036364	4974.2	16.632
+0.039745	4972.8	17.603
+0.043339	4994.1	18.748
+0.047156	5003.8	20.085
+0.051201	4972.8	21.030
+0.055484	4991.5	22.322
+0.060011	4996.9	23.591
+0.064790	4988.7	24.938
+0.069830	4986.0	26.264
+0.075138	4978.9	27.666
+0.080722	5000.6	29.193
+0.086591	5007.0	30.641
+0.092751	4993.0	32.127
+0.099213	4994.8	33.617
+0.10598	5000.2	35.275
+0.11307	4982.2	36.735
+0.12048	5000.9	38.606
+0.12823	5005.5	40.398
+0.13631	5001.8	42.001
+0.14475	5007.1	43.879
+0.15355	5008.6	45.741
+0.16271	5010.4	47.684
+0.17226	5006.5	49.551
+0.18218	5012.6	51.461
+0.19250	5008.9	53.575
+0.20322	5008.9	55.650
+0.21436	5007.8	57.793
+0.22591	5010.6	59.860
+0.23789	5002.1	61.971
+0.25031	5003.2	64.279
+0.26318	5001.1	66.477
+0.27650	5015.3	68.964
+0.29029	5016.7	71.441
+0.30455	5015.2	73.767
+0.31930	5013.9	76.334
+0.33454	5014.3	78.843
+0.35028	5015.0	81.416
+0.36653	5015.2	84.011
+0.38330	5014.0	86.638
+0.40060	5010.5	89.277
+0.41844	5010.2	91.970
+0.43683	5014.8	94.920
+0.45578	5016.8	97.780
+0.47530	5015.9	100.70
+0.49539	5013.5	103.61
+0.51608	5017.6	106.66
+0.53735	5016.8	109.73
+0.55924	5016.9	112.75
+0.58174	5015.7	115.95
+0.60487	5015.9	119.11
+0.62863	5017.2	122.30
+0.65304	5017.9	125.66
+0.67811	5015.6	128.96
+0.70384	5017.8	132.38
+0.73025	5010.3	135.62
+0.75734	5013.3	139.16
+0.78513	5013.4	142.77
+0.81363	5016.3	146.48
+0.84284	5014.7	150.02
+0.87278	5016.1	153.78
+0.90345	5015.7	157.55
+0.93488	5016.1	160.66
+0.96705	4820.3	156.24
+1.0000	628.39	
+
+log marginal likelihood (using stepping stone sampling) from pathLikelihood.delta = 4974.22903216921
+
+log marginal likelihood (using harmonic mean) from likelihood = -39852.0147 +/- 0.2426 burnin=100 replicates=1000
