@@ -1,5 +1,7 @@
 logo: "PHYFUM"
 tagline: "PHYFUM: PHYlogeny from FlUctuating Methylation"
+commands: ["config", "run"]
+version: "0.6.0"
 cli:
   input:
     type: path
