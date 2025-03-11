@@ -56,7 +56,7 @@ def test_main_output_files(phyfum_output):
     # Define patterns to ignore for timestamp/runtime comparisons
     ignore_patterns = [
         r"\[R-package APE, \w+ \w+\s+\d+ \d+:\d+:\d+ \d+\]",  # For overS.tree
-        r"# \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+",        # For overS.log
+        r"# \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?",        # For overS.log
         r"# Generated \w+ \w+ \d+ \d+:\d+:\d+ \w+ \d+ \[seed=\d+\]",  # For seed*.log
         r"# -beagle_off -seed \d+ .+"  # For seed*.log with variable seed and path
     ]
