@@ -42,8 +42,8 @@ ENV HOME=/home
 ENV JAVA_HOME=/project/jdk-21.0.4
 ENV PATH=$JAVA_HOME/bin:/project/PHYFUM/release/Linux/Phyfumv1.0_RC1/bin:$PATH
 
-# install the correct version of java!!!!!
-RUN wget -O jdk.tar.gz https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz  && tar zxvf jdk.tar.gz
+# install the correct version of java
+RUN wget -O jdk.tar.gz https://download.oracle.com/java/21/archive/jdk-21.0.4_linux-x64_bin.tar.gz  && tar zxvf jdk.tar.gz
 
 # install Ant
 RUN mkdir -p /opt/ant/ && \
@@ -51,8 +51,11 @@ RUN mkdir -p /opt/ant/ && \
     tar -xvzf /opt/ant/apache-ant-1.9.8-bin.tar.gz -C /opt/ant/ && \
     rm -f /opt/ant/apache-ant-1.9.8-bin.tar.gz
 
-#Add Sonarqube lib
-RUN wget http://downloads.sonarsource.com/plugins/org/codehaus/sonar-plugins/sonar-ant-task/2.3/sonar-ant-task-2.3.jar -P /opt/ant/apache-ant-1.9.8/lib/
+RUN apt-get update && \
+    apt-get install libgsl-dev -y && \ 
+    rm -rf /var/lib/apt/lists/* && \
+    R -e "pacman::p_load(LDATS, ape,)"
+
 #Set Ant Home in Docker container for Jenkins
 ENV ANT_HOME=/opt/ant/apache-ant-1.9.8
 #Set Ant Params in Docker for Jenkins

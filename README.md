@@ -2,10 +2,13 @@
 
 [![PyPI - Version](https://img.shields.io/pypi/v/phyfum.svg)](https://pypi.org/project/phyfum)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/phyfum.svg)](https://pypi.org/project/phyfum)
-[![GitBook Badge](https://img.shields.io/badge/GitBook-3884FF?logo=gitbook&logoColor=fff&style=plastic)](https://phyfum.gitbook.io/tutorial/)
+[![PHYFUM CI/CD Pipeline](https://github.com/pbousquets/PHYFUMflow/actions/workflows/main.yml/badge.svg)](https://github.com/pbousquets/PHYFUMflow/actions/workflows/main.yml)
+![GitBook Badge](https://img.shields.io/badge/Gitbook-docs-orange?style=flat&logo=gitbook&link=https%3A%2F%2Fphyfum.gitbook.io%2Ftutorial)
 
-
-#### Visit our [GitBook](https://phyfum-1.gitbook.io/tutorial/) for a detailed tutorial of Phyfum
+ 
+> [!TIP]
+>
+> Visit our [GitBook](https://phyfum-1.gitbook.io/tutorial/) for a detailed tutorial of Phyfum
 
 --- 
 ## Quick start
