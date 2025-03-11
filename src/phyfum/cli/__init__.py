@@ -31,6 +31,30 @@ def betas2xml(ctx: typer.Context):
     command = [sys.executable, str(script_path)] + arguments
     _ = subprocess.run(command, capture_output=False, text=True)
 
+@phyfum.app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
+def select_fcpgs(ctx: typer.Context):
+    """
+    Select fCpG loci from methylation data.
+    
+    This command runs the select_cpgs.py script to identify the most heterogeneous CpG sites
+    in methylation array data based on patient information and filtering criteria.
+    """
+    # Get the path to the select_cpgs.py script
+    script_path = Path(__file__).parent.parent / "workflow" / "aux" / "select_cpgs.py"
+    
+    if not script_path.exists():
+        typer.echo(f"Error: Script not found at {script_path}")
+        raise typer.Exit(1)
+    
+    # If no arguments provided, show help
+    if len(ctx.args) == 0:
+        arguments = ["--help"]
+    else:
+        arguments = ctx.args
+    
+    # Build and run the command
+    command = [sys.executable, str(script_path)] + arguments
+    _ = subprocess.run(command, capture_output=False, text=True)
 
 @phyfum.app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
 def beast(ctx: typer.Context):
