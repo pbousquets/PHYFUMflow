@@ -170,6 +170,25 @@ checkpoint split_flucpgs_trees:
         df = pd.read_csv(input[0])
         df.set_index(df.columns[0], inplace=True)
         
+        fcpgs_file = config.get("fcpgs")
+        if fcpgs_file:
+            try:
+                # Read CpG IDs from the file (first column)
+                fcpgs_df = pd.read_csv(fcpgs_file)
+                cpg_ids = fcpgs_df.iloc[:, 0].tolist()
+                
+                # Filter the dataframe to only include specified CpGs
+                original_count = len(df)
+                df = df[df.index.isin(cpg_ids)]
+                filtered_count = len(df)
+                
+                # Check if we have any rows left after filtering
+                if filtered_count == 0:
+                    raise ValueError(f"No CpGs found in input after filtering with {fcpgs_file}. Check that CpG IDs match.")
+                
+            except Exception as e:
+                raise ValueError(f"Error processing fcpgs file ({fcpgs_file}): {str(e)}")
+
         makedirs(output[0], exist_ok = True)
         for patient in PATIENTS:
             samples = SAMPLES[patient]
